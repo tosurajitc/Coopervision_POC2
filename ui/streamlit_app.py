@@ -2,7 +2,7 @@ import streamlit as st
 
 # Set page config MUST BE THE FIRST STREAMLIT COMMAND
 st.set_page_config(
-    page_title="Ticket Automation AI Advisor",
+    page_title="AI Advisor - Ticket Automation" ,
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -450,4 +450,4 @@ def main():
 
 # Run the main function when script is executed
 if __name__ == "__main__":
-    mai
+    main()
