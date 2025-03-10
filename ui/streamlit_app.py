@@ -2,7 +2,7 @@ import streamlit as st
 
 # Set page config MUST BE THE FIRST STREAMLIT COMMAND
 st.set_page_config(
-    page_title="AI Advisor - Ticket Automation" ,
+    page_title="Ticket Automation Advisor",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -64,6 +64,26 @@ def apply_custom_css():
     }
     h1, h2, h3 {
         color: #1f4e79;
+    }
+    div[data-baseweb="select"] span {
+        max-width: 100%;
+        white-space: normal;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: visible;
+    }
+    div[data-baseweb="select"] {
+        min-height: 40px;
+    }
+    div[data-baseweb="popover"] div[role="listbox"] {
+        max-width: 100%;
+    }
+    div[data-baseweb="popover"] div[role="option"] {
+        white-space: normal;
+        padding: 10px;
+        line-height: 1.4;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -177,7 +197,7 @@ def display_results():
         return
     
     # Create tabs for different views with consistent widths
-    tab_labels = ["Data Overview", " Patterns", " Automation Suggestions", "❓ Query History"]
+    tab_labels = ["Data Overview", "Patterns", "Automation Suggestions", "❓ Query History"]
     tabs = st.tabs(tab_labels)
     
     # Tab 1: Data Overview
@@ -238,15 +258,15 @@ def display_results():
             #     st.plotly_chart(fig, use_container_width=True)
             
             # Complexity distribution
-            # if "complexity_distribution" in summary_stats:
-            #     st.subheader("Ticket Complexity")
-            #     complexity_data = pd.DataFrame({
-            #         "Complexity": list(summary_stats["complexity_distribution"].keys()),
-            #         "Count": list(summary_stats["complexity_distribution"].values())
-            #     })
+            if "complexity_distribution" in summary_stats:
+                st.subheader("Ticket Complexity")
+                complexity_data = pd.DataFrame({
+                    "Complexity": list(summary_stats["complexity_distribution"].keys()),
+                    "Count": list(summary_stats["complexity_distribution"].values())
+                })
                 
-            #     fig = px.bar(complexity_data, x="Complexity", y="Count", title="Tickets by Complexity")
-            #     st.plotly_chart(fig, use_container_width=True)
+                fig = px.bar(complexity_data, x="Complexity", y="Count", title="Tickets by Complexity")
+                st.plotly_chart(fig, use_container_width=True)
         
         # Show sample of processed data
         processed_data = data_processor_results.get("processed_data")
@@ -346,7 +366,7 @@ def main():
         
         if not st.session_state.file_uploaded:
             # Show welcome message when no file is uploaded
-            st.title("Welcome to Ticket Automation Advisor")
+            st.title("Ticket Automation Advisor")
             st.markdown("""
             This tool analyzes help desk ticket data to identify automation opportunities.
             
@@ -369,7 +389,7 @@ def main():
                 st.subheader("Upload Ticket Data")
                 
                 # File uploader
-                uploaded_file = st.file_uploader("Upload .csv or .xlsx file", type=["csv", "xlsx", "xls"])
+                uploaded_file = st.file_uploader("Upload .csv, .xls or .xlsx file", type=["csv", "xlsx", "xls"])
                 
                 if uploaded_file is not None:
                     if st.button("Process Data"):
