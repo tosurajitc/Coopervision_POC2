@@ -1,0 +1,31 @@
+create virtual environment: python -m venv .venv
+Activate virtual environment: .venv\Scripts\activate
+How to activate .env file: pip install python-dotenv then from dotenv import load_dotenv then add this function load_dotenv()  # Load variables from .env into the environment
+Run the requirement.txt file: pip install -r requirements.txt
+create requirement.txt file: pip freeze > requirements.txt
+to run the program : streamlit run main.py
+
+GIT PUSH Steps: 
+In the terminal, initialize a new Git repository: git init
+Add all files in your folder to the staging area: git add .
+Commit the files with a message: git commit -m "Initial commit"
+Link your local repository to the GitHub repository you mentioned: git remote add origin https://github.com/tosurajitc/Agentic_Reporting.git
+Push the changes to the remote repository: git push -u origin master
+
+
+automation_advisor/
+├── .env                  # Environment variables (GROQ API keys)
+├── requirements.txt      # Project dependencies
+├── main.py               # Main application entry point
+├── agents/
+│   ├── __init__.py       
+│   ├── data_processor.py # Agent 1: Data processing and visualization
+│   ├── insight_finder.py # Agent 2: Pattern identification and automation suggestions
+│   └── user_query.py     # Agent 3: Responds to user queries
+├── utils/
+│   ├── __init__.py
+│   ├── data_cleaner.py   # Data cleaning utilities
+│   └── file_handler.py   # File processing utilities
+└── ui/
+    ├── __init__.py
+    └── streamlit_app.py  # Streamlit UI components
