@@ -85,6 +85,14 @@ def apply_custom_css():
         padding: 10px;
         line-height: 1.4;
     }
+    /* Increase size of standard questions */
+    .standard-questions-container label {
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
+    }
+    .standard-questions-container div[data-baseweb="select"] span {
+        font-size: 1.2rem !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -202,6 +210,69 @@ def display_results():
     
     # Tab 1: Data Overview
     with tabs[0]:
+        # First section: Ask Questions To Get Some Insight
+        st.header("🔍 Ask Questions To Get Some Insight")
+        
+        # Get standard questions from Agent 3
+        if st.session_state.user_query_agent:
+            # Standard questions dropdown
+            standard_questions = st.session_state.user_query_agent.get_standard_questions()
+            
+            # Format questions for display with larger size (h2)
+            st.markdown("## Standard Questions")
+            st.markdown("Select a question to analyze your ticket data and get Qualititave Response:")
+            
+            # Create a dropdown with questions for selection
+            question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
+            
+            # Wrap in a div to apply custom CSS for larger size
+            st.markdown('<div class="standard-questions-container">', unsafe_allow_html=True)
+            selected_question = st.selectbox("", question_options, label_visibility="collapsed", key="data_overview_question")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            if selected_question != "Select a question...":
+                # Find the question ID and display the description
+                for q in standard_questions:
+                    if q["question"] == selected_question:
+                        question_id = q["id"]
+                        st.info(q["description"])
+                        break
+                
+                if st.button("Get Answer", key="data_overview_answer_btn"):
+                    with st.spinner("Analyzing..."):
+                        response = st.session_state.user_query_agent.process_query(
+                            selected_question, 
+                            is_standard=True, 
+                            question_id=question_id
+                        )
+                        st.session_state.user_query_history.append(response)
+                        st.rerun()
+        
+        # If there are query results, display the latest on top
+        if st.session_state.user_query_history:
+            st.markdown("### Latest Response")
+            latest_query = st.session_state.user_query_history[-1]
+            
+            # Display question in a colored box
+            st.markdown(f"""
+            <div style="background-color:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:10px;">
+                <strong>Question:</strong> {latest_query.get('question', 'Unknown query')}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Clean up response text
+            response_text = latest_query.get("response", "No response available.")
+            if "<think>" in response_text:
+                response_text = response_text.split("<think>")[0].strip()
+            if response_text.startswith("Response:"):
+                response_text = response_text[9:].strip()
+            
+            st.write(response_text)
+
+        # Add a divider between sections
+        st.markdown("---")
+        
+        # Second section: Ticket Data Overview
         st.header("Ticket Data Overview")
         
         # File information
@@ -244,62 +315,6 @@ def display_results():
                 
                 fig = px.bar(band_data, x="Time Band", y="Count", title="Tickets by Resolution Time")
                 st.plotly_chart(fig, use_container_width=True)
-        
-        # Add the Ask Questions section right after Resolution Time Distribution
-        st.markdown("---")
-        st.header("🔍 Ask Questions To Get Some Insight")
-        
-        # Get standard questions from Agent 3
-        if st.session_state.user_query_agent:
-            # Standard questions dropdown
-            standard_questions = st.session_state.user_query_agent.get_standard_questions()
-            
-            # Format questions for display
-            st.subheader("Standard Questions")
-            st.markdown("Select a question to analyze your ticket data and get Qualititave Response:")
-            
-            # Create a dropdown with questions for selection
-            question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
-            selected_question = st.selectbox("", question_options, label_visibility="collapsed", key="data_overview_question")
-            
-            if selected_question != "Select a question...":
-                # Find the question ID and display the description
-                for q in standard_questions:
-                    if q["question"] == selected_question:
-                        question_id = q["id"]
-                        st.info(q["description"])
-                        break
-                
-                if st.button("Get Answer", key="data_overview_answer_btn"):
-                    with st.spinner("Analyzing..."):
-                        response = st.session_state.user_query_agent.process_query(
-                            selected_question, 
-                            is_standard=True, 
-                            question_id=question_id
-                        )
-                        st.session_state.user_query_history.append(response)
-                        st.rerun()
-        
-        # If there are query results, display the latest on top
-        if st.session_state.user_query_history:
-            st.markdown("### Latest Response")
-            latest_query = st.session_state.user_query_history[-1]
-            
-            # Display question in a colored box
-            st.markdown(f"""
-            <div style="background-color:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:10px;">
-                <strong>Question:</strong> {latest_query.get('question', 'Unknown query')}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Clean up response text
-            response_text = latest_query.get("response", "No response available.")
-            if "<think>" in response_text:
-                response_text = response_text.split("<think>")[0].strip()
-            if response_text.startswith("Response:"):
-                response_text = response_text[9:].strip()
-            
-            st.write(response_text)
     
     # Tab 2: Patterns
     with tabs[1]:
@@ -435,7 +450,6 @@ def main():
             
             # Sidebar for file upload
             with st.sidebar:
-
                 st.subheader("Upload Ticket Data")
                 
                 # File uploader
@@ -454,9 +468,7 @@ def main():
             
             # Sidebar content when data is loaded
             with st.sidebar:
-                st.title("Ticket Automation Advisor")
-                st.markdown("---")
-                
+
                 # Option to upload a new file
                 st.subheader("Upload New Data")
                 if st.button("Clear Current Data"):
