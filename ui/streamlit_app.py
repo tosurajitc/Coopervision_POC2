@@ -197,7 +197,7 @@ def display_results():
         return
     
     # Create tabs for different views with consistent widths
-    tab_labels = ["Data Overview", "Patterns", "Automation Suggestions", "❓ Query History"]
+    tab_labels = ["Data Overview", "Patterns", "Automation Suggestions", "💬 Custom Query"]
     tabs = st.tabs(tab_labels)
     
     # Tab 1: Data Overview
@@ -209,8 +209,7 @@ def display_results():
         if file_info:
             st.subheader("File Information")
             col1, col2, col3 = st.columns(3)
-            # with col1:
-            #     st.metric("Filename", file_info.get("filename", "Unknown"))
+
             with col1:
                 st.metric("Total Tickets", file_info.get("rows", 0))
             with col3:
@@ -245,34 +244,62 @@ def display_results():
                 
                 fig = px.bar(band_data, x="Time Band", y="Count", title="Tickets by Resolution Time")
                 st.plotly_chart(fig, use_container_width=True)
-            
-            # Assignment group distribution
-            # if "assignment_group_distribution" in summary_stats:
-            #     st.subheader("Top Assignment Groups")
-            #     group_data = pd.DataFrame({
-            #         "Assignment Group": list(summary_stats["assignment_group_distribution"].keys()),
-            #         "Count": list(summary_stats["assignment_group_distribution"].values())
-            #     })
-                
-            #     fig = px.pie(group_data, values="Count", names="Assignment Group", title="Tickets by Assignment Group")
-            #     st.plotly_chart(fig, use_container_width=True)
-            
-            # Complexity distribution
-            if "complexity_distribution" in summary_stats:
-                st.subheader("Ticket Complexity")
-                complexity_data = pd.DataFrame({
-                    "Complexity": list(summary_stats["complexity_distribution"].keys()),
-                    "Count": list(summary_stats["complexity_distribution"].values())
-                })
-                
-                fig = px.bar(complexity_data, x="Complexity", y="Count", title="Tickets by Complexity")
-                st.plotly_chart(fig, use_container_width=True)
         
-        # Show sample of processed data
-        processed_data = data_processor_results.get("processed_data")
-        if processed_data is not None:
-            st.subheader("Sample Data")
-            st.dataframe(processed_data.head(10))
+        # Add the Ask Questions section right after Resolution Time Distribution
+        st.markdown("---")
+        st.header("🔍 Ask Questions To Get Some Insight")
+        
+        # Get standard questions from Agent 3
+        if st.session_state.user_query_agent:
+            # Standard questions dropdown
+            standard_questions = st.session_state.user_query_agent.get_standard_questions()
+            
+            # Format questions for display
+            st.subheader("Standard Questions")
+            st.markdown("Select a question to analyze your ticket data and get Qualititave Response:")
+            
+            # Create a dropdown with questions for selection
+            question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
+            selected_question = st.selectbox("", question_options, label_visibility="collapsed", key="data_overview_question")
+            
+            if selected_question != "Select a question...":
+                # Find the question ID and display the description
+                for q in standard_questions:
+                    if q["question"] == selected_question:
+                        question_id = q["id"]
+                        st.info(q["description"])
+                        break
+                
+                if st.button("Get Answer", key="data_overview_answer_btn"):
+                    with st.spinner("Analyzing..."):
+                        response = st.session_state.user_query_agent.process_query(
+                            selected_question, 
+                            is_standard=True, 
+                            question_id=question_id
+                        )
+                        st.session_state.user_query_history.append(response)
+                        st.rerun()
+        
+        # If there are query results, display the latest on top
+        if st.session_state.user_query_history:
+            st.markdown("### Latest Response")
+            latest_query = st.session_state.user_query_history[-1]
+            
+            # Display question in a colored box
+            st.markdown(f"""
+            <div style="background-color:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:10px;">
+                <strong>Question:</strong> {latest_query.get('question', 'Unknown query')}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Clean up response text
+            response_text = latest_query.get("response", "No response available.")
+            if "<think>" in response_text:
+                response_text = response_text.split("<think>")[0].strip()
+            if response_text.startswith("Response:"):
+                response_text = response_text[9:].strip()
+            
+            st.write(response_text)
     
     # Tab 2: Patterns
     with tabs[1]:
@@ -303,37 +330,62 @@ def display_results():
             st.info("No automation suggestions available.")
         else:
             for i, suggestion in enumerate(suggestions):
-                with st.expander(f"Suggestion {i+1}: {suggestion.get('keywords', [''])[0] if suggestion.get('keywords') else ''}"):
-                    # Problem root cause
-                    if "problem_root_cause" in suggestion and suggestion["problem_root_cause"]:
+                # Only display suggestions with a valid problem root cause
+                if "problem_root_cause" in suggestion and suggestion["problem_root_cause"]:
+                    with st.expander(f"Suggestion {i+1}: {suggestion.get('keywords', [''])[0] if suggestion.get('keywords') else ''}"):
+                        # Problem root cause
                         st.subheader("Problem Root Cause")
                         st.write(suggestion["problem_root_cause"])
-                    
-                    # Suggested solution
-                    if "suggested_solution" in suggestion and suggestion["suggested_solution"]:
-                        st.subheader("Suggested Solution")
-                        st.write(suggestion["suggested_solution"])
-                    
-                    # Justification
-                    if "justification" in suggestion and suggestion["justification"]:
-                        st.subheader("Why This is the Best Solution")
-                        st.write(suggestion["justification"])
-                    
-                    # Impact
-                    st.subheader("Impact")
-                    st.write(f"This solution addresses {suggestion.get('frequency', 0)} tickets ({suggestion.get('percentage', 0):.1f}% of total tickets)")
+                        
+                        # Suggested solution
+                        if "suggested_solution" in suggestion and suggestion["suggested_solution"]:
+                            st.subheader("Suggested Solution")
+                            st.write(suggestion["suggested_solution"])
+                        
+                        # Justification
+                        if "justification" in suggestion and suggestion["justification"]:
+                            st.subheader("Why This is the Best Solution")
+                            st.write(suggestion["justification"])
+                        
+                        # Impact
+                        st.subheader("Impact")
+                        st.write(f"This solution addresses {suggestion.get('frequency', 0)} tickets ({suggestion.get('percentage', 0):.1f}% of total tickets)")
     
-    # Tab 4: Query History
+    # Tab 4: Custom Query
     with tabs[3]:
-        st.header("Query History")
+        st.header("Custom Query")
         
+        # Add custom query input at the top
+        if st.session_state.user_query_agent:
+            st.subheader("Ask Your Own Question")
+            st.markdown("Enter any question about the ticket data and press tab to submit:")
+            custom_query = st.text_area("", height=150, placeholder="e.g., What types of issues take the longest to resolve?", label_visibility="collapsed", key="custom_query_tab", on_change=None)
+            
+            # Focus on the button when tab is selected
+            submit_button = st.button("Submit Question", key="custom_query_submit_btn", use_container_width=True)
+            if custom_query and submit_button:
+                with st.spinner("Analyzing..."):
+                    response = st.session_state.user_query_agent.process_query(custom_query)
+                    st.session_state.user_query_history.append(response)
+                    st.rerun()
+        
+        st.markdown("---")
+        st.subheader("Query History")
+        
+        # Check if there are any queries in the history
         if not st.session_state.user_query_history:
-            st.info("No queries have been made yet. Use the sidebar to ask questions about the ticket data.")
+            st.info("No queries have been made yet. Use the questions section to analyze the ticket data.")
         else:
+            # Display all previous queries with their responses
             for i, query_result in enumerate(reversed(st.session_state.user_query_history)):
-                with st.expander(f"Q: {query_result.get('question', 'Unknown query')}", expanded=(i == 0)):
+                query_text = query_result.get('question', 'Unknown query')
+                
+                # Create an expander for each query
+                with st.expander(f"Q: {query_text}", expanded=(i == 0)):
+                    # Display the response
                     st.markdown("### Response")
-                    # Clean up response text - remove any "<think>" sections or "Response:" headers
+                    
+                    # Clean up response text
                     response_text = query_result.get("response", "No response available.")
                     
                     # Remove thinking process if present
@@ -343,9 +395,11 @@ def display_results():
                     # Remove Response: header if present
                     if response_text.startswith("Response:"):
                         response_text = response_text[9:].strip()
-                        
+                    
+                    # Display the cleaned response
                     st.write(response_text)
                     
+                    # Show additional metadata for standard questions
                     if query_result.get("is_standard"):
                         st.caption(f"Standard question ID: {query_result.get('question_id', 'unknown')}")
 
@@ -359,14 +413,9 @@ def main():
     
     # Main app layout and logic
     try:
-        # Sidebar setup
-        st.sidebar.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
-        # st.sidebar.title("Ticket Automation Advisor")
-        # st.sidebar.markdown("---")
-        
         if not st.session_state.file_uploaded:
             # Show welcome message when no file is uploaded
-            st.title("Ticket Automation Advisor")
+            st.title("Quantitative AI-Powered Ticket Advisor")
             st.markdown("""
             This tool analyzes help desk ticket data to identify automation opportunities.
             
@@ -386,10 +435,11 @@ def main():
             
             # Sidebar for file upload
             with st.sidebar:
+
                 st.subheader("Upload Ticket Data")
                 
                 # File uploader
-                uploaded_file = st.file_uploader("Upload .csv, .xls or .xlsx file", type=["csv", "xlsx", "xls"])
+                uploaded_file = st.file_uploader("Upload .csv or .xlsx file", type=["csv", "xlsx", "xls"])
                 
                 if uploaded_file is not None:
                     if st.button("Process Data"):
@@ -402,8 +452,11 @@ def main():
             # Show results when file is processed
             display_results()
             
-            # Sidebar for querying
+            # Sidebar content when data is loaded
             with st.sidebar:
+                st.title("Ticket Automation Advisor")
+                st.markdown("---")
+                
                 # Option to upload a new file
                 st.subheader("Upload New Data")
                 if st.button("Clear Current Data"):
@@ -421,48 +474,6 @@ def main():
                             if success:
                                 st.success("File processed successfully!")
                                 st.rerun()
-                
-                st.markdown("---")
-                
-                # Query section
-                st.subheader("🔍 Ask Questions")
-                
-                # Get standard questions from Agent 3
-                if st.session_state.user_query_agent:
-                    standard_questions = st.session_state.user_query_agent.get_standard_questions()
-                    
-                    # Create a dropdown for standard questions
-                    question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
-                    selected_question = st.selectbox("Standard Questions:", question_options)
-                    
-                    if selected_question != "Select a question...":
-                        # Find the question ID
-                        question_id = None
-                        for q in standard_questions:
-                            if q["question"] == selected_question:
-                                question_id = q["id"]
-                                st.caption(q["description"])
-                                break
-                        
-                        if st.button("Get Answer"):
-                            with st.spinner("Analyzing..."):
-                                response = st.session_state.user_query_agent.process_query(
-                                    selected_question, 
-                                    is_standard=True, 
-                                    question_id=question_id
-                                )
-                                st.session_state.user_query_history.append(response)
-                                st.rerun()
-                    
-                    st.markdown("---")
-                    st.subheader("💬 Custom Query")
-                    custom_query = st.text_area("Enter your question about the ticket data:", height=100)
-                    
-                    if custom_query and st.button("Submit Question"):
-                        with st.spinner("Analyzing..."):
-                            response = st.session_state.user_query_agent.process_query(custom_query)
-                            st.session_state.user_query_history.append(response)
-                            st.rerun()
     
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
