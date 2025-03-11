@@ -221,7 +221,7 @@ def display_results():
         return
     
     # Create tabs for different views with consistent widths
-    tab_labels = ["Data Overview", "Patterns", "Automation Suggestions", "💬 Custom Query"]
+    tab_labels = ["Qualitative Analysis", "Patterns", "Automation Suggestions", "💬 Custom Query"]
     tabs = st.tabs(tab_labels)
     
     # Tab 1: Data Overview
@@ -504,9 +504,7 @@ def main():
             
             # Sidebar content when data is loaded
             with st.sidebar:
-                st.title("Ticket Automation Advisor")
-                st.markdown("---")
-                
+  
                 # Option to upload a new file
                 st.subheader("Upload New Data")
                 if st.button("Clear Current Data"):
