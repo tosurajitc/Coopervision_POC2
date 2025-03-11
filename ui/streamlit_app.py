@@ -65,6 +65,12 @@ def apply_custom_css():
     h1, h2, h3 {
         color: #1f4e79;
     }
+    /* Style for selectbox */
+    div[data-baseweb="select"] {
+        min-height: 60px;
+        max-width: 800px !important;
+        width: 100% !important;
+    }
     div[data-baseweb="select"] span {
         max-width: 100%;
         white-space: normal;
@@ -73,25 +79,35 @@ def apply_custom_css():
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: visible;
+        font-size: 1.6rem !important;
+        font-weight: bold !important;
+        line-height: 1.5 !important;
     }
-    div[data-baseweb="select"] {
-        min-height: 40px;
+    div[data-baseweb="popover"] {
+        width: auto !important;
+        max-width: 800px !important;
     }
     div[data-baseweb="popover"] div[role="listbox"] {
-        max-width: 100%;
+        max-width: 800px;
+        width: auto !important;
+        font-size: 1.6rem !important;
     }
     div[data-baseweb="popover"] div[role="option"] {
         white-space: normal;
-        padding: 10px;
-        line-height: 1.4;
+        padding: 12px;
+        line-height: 1.5;
+        font-size: 1.6rem !important;
+        font-weight: bold !important;
     }
-    /* Increase size of standard questions */
-    .standard-questions-container label {
-        font-size: 1.5rem !important;
-        font-weight: 600 !important;
+    /* Make selectbox text larger */
+    .stSelectbox {
+        font-size: 1.6rem !important;
+        width: auto !important;
+        max-width: 800px !important;
     }
-    .standard-questions-container div[data-baseweb="select"] span {
-        font-size: 1.2rem !important;
+    .stSelectbox > div {
+        width: auto !important;
+        max-width: 800px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -219,44 +235,59 @@ def display_results():
             standard_questions = st.session_state.user_query_agent.get_standard_questions()
             
             # Format questions for display with larger size (h2)
-            st.markdown("## Standard Questions")
-            st.markdown("Select a question to analyze your ticket data and get Qualititave Response:")
+            st.markdown('<h2 style="font-size: 2.4rem; color: #1f4e79; font-weight: bold;">Standard Questions</h2>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 1.3rem; margin-bottom: 15px;">Select a question to analyze your ticket data and get Qualititave Response:</div>', unsafe_allow_html=True)
             
             # Create a dropdown with questions for selection
             question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
             
-            # Wrap in a div to apply custom CSS for larger size
-            st.markdown('<div class="standard-questions-container">', unsafe_allow_html=True)
-            selected_question = st.selectbox("", question_options, label_visibility="collapsed", key="data_overview_question")
+            # Style the dropdown container to be larger to accommodate the bigger text
+            st.markdown('<div style="margin-bottom: 30px; margin-top: 15px;">', unsafe_allow_html=True)
+            
+            # Auto-answer on selection change - only create one dropdown
+            previous_question = st.session_state.get("previous_question", "")
+            selected_question = st.selectbox(
+                "", 
+                question_options, 
+                label_visibility="collapsed", 
+                key="data_overview_question_select",
+                index=0 if previous_question == "" else question_options.index(previous_question) if previous_question in question_options else 0
+            )
+            
             st.markdown('</div>', unsafe_allow_html=True)
             
-            if selected_question != "Select a question...":
-                # Find the question ID and display the description
+            # Detect when a new question is selected
+            if selected_question != "Select a question..." and selected_question != previous_question:
+                # Store the current selection for future comparison
+                st.session_state.previous_question = selected_question
+                
+                # Find the question ID
+                question_id = None
                 for q in standard_questions:
                     if q["question"] == selected_question:
                         question_id = q["id"]
                         st.info(q["description"])
                         break
                 
-                if st.button("Get Answer", key="data_overview_answer_btn"):
-                    with st.spinner("Analyzing..."):
-                        response = st.session_state.user_query_agent.process_query(
-                            selected_question, 
-                            is_standard=True, 
-                            question_id=question_id
-                        )
-                        st.session_state.user_query_history.append(response)
-                        st.rerun()
+                # Auto-answer the question without a button
+                with st.spinner("Analyzing..."):
+                    response = st.session_state.user_query_agent.process_query(
+                        selected_question, 
+                        is_standard=True, 
+                        question_id=question_id
+                    )
+                    st.session_state.user_query_history.append(response)
+                    st.rerun()
         
         # If there are query results, display the latest on top
         if st.session_state.user_query_history:
-            st.markdown("### Latest Response")
+            st.markdown('<h1 style="font-size: 1.8rem; color: #1f4e79; margin-bottom: 0.8rem;">Latest Response</h1>', unsafe_allow_html=True)
             latest_query = st.session_state.user_query_history[-1]
             
-            # Display question in a colored box
+            # Display question in a colored box with larger font to match heading size
             st.markdown(f"""
-            <div style="background-color:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:10px;">
-                <strong>Question:</strong> {latest_query.get('question', 'Unknown query')}
+            <div style="background-color:#e6f0ff; padding:20px; border-radius:5px; margin-bottom:20px; font-size: 1.8rem; font-weight: bold;">
+                <strong style="font-size: 2rem;">Question:</strong> {latest_query.get('question', 'Unknown query')}
             </div>
             """, unsafe_allow_html=True)
             
@@ -367,6 +398,7 @@ def display_results():
                         st.write(f"This solution addresses {suggestion.get('frequency', 0)} tickets ({suggestion.get('percentage', 0):.1f}% of total tickets)")
     
     # Tab 4: Custom Query
+    # Tab 4: Custom Query
     with tabs[3]:
         st.header("Custom Query")
         
@@ -374,49 +406,48 @@ def display_results():
         if st.session_state.user_query_agent:
             st.subheader("Ask Your Own Question")
             st.markdown("Enter any question about the ticket data and press tab to submit:")
-            custom_query = st.text_area("", height=150, placeholder="e.g., What types of issues take the longest to resolve?", label_visibility="collapsed", key="custom_query_tab", on_change=None)
             
-            # Focus on the button when tab is selected
-            submit_button = st.button("Submit Question", key="custom_query_submit_btn", use_container_width=True)
-            if custom_query and submit_button:
-                with st.spinner("Analyzing..."):
-                    response = st.session_state.user_query_agent.process_query(custom_query)
-                    st.session_state.user_query_history.append(response)
-                    st.rerun()
-        
-        st.markdown("---")
-        st.subheader("Query History")
-        
-        # Check if there are any queries in the history
-        if not st.session_state.user_query_history:
-            st.info("No queries have been made yet. Use the questions section to analyze the ticket data.")
-        else:
-            # Display all previous queries with their responses
-            for i, query_result in enumerate(reversed(st.session_state.user_query_history)):
-                query_text = query_result.get('question', 'Unknown query')
+            # Create a form to properly handle submission
+            with st.form(key="custom_query_form"):
+                custom_query = st.text_area("Question", height=150, 
+                                          placeholder="e.g., What types of issues take the longest to resolve?", 
+                                          label_visibility="collapsed")
                 
-                # Create an expander for each query
-                with st.expander(f"Q: {query_text}", expanded=(i == 0)):
-                    # Display the response
-                    st.markdown("### Response")
-                    
-                    # Clean up response text
-                    response_text = query_result.get("response", "No response available.")
-                    
-                    # Remove thinking process if present
-                    if "<think>" in response_text:
-                        response_text = response_text.split("<think>")[0].strip()
+                # Submit button inside the form
+                submit_button = st.form_submit_button("Submit Question", use_container_width=True)
+            
+            # Process the form submission
+            if submit_button and custom_query:
+                with st.spinner("Analyzing..."):
+                    try:
+                        # Process the query and get a response
+                        response = st.session_state.user_query_agent.process_query(custom_query)
                         
-                    # Remove Response: header if present
-                    if response_text.startswith("Response:"):
-                        response_text = response_text[9:].strip()
-                    
-                    # Display the cleaned response
-                    st.write(response_text)
-                    
-                    # Show additional metadata for standard questions
-                    if query_result.get("is_standard"):
-                        st.caption(f"Standard question ID: {query_result.get('question_id', 'unknown')}")
+                        # Add to query history
+                        st.session_state.user_query_history.append(response)
+                        
+                        # Display the response immediately
+                        st.markdown("### Response")
+                        
+                        # Display question in a colored box
+                        st.markdown(f"""
+                        <div style="background-color:#e6f0ff; padding:15px; border-radius:5px; margin-bottom:15px;">
+                            <strong>Question:</strong> {custom_query}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Clean up response text
+                        response_text = response.get("response", "No response available.")
+                        if "<think>" in response_text:
+                            response_text = response_text.split("<think>")[0].strip()
+                        if response_text.startswith("Response:"):
+                            response_text = response_text[9:].strip()
+                        
+                        # Display the response
+                        st.write(response_text)
+                    except Exception as e:
+                        st.error(f"Error processing query: {str(e)}")
+                        logger.error(f"Error in custom query: {str(e)}", exc_info=True)
 
 def main():
     """Main function for the Streamlit app."""
@@ -452,11 +483,16 @@ def main():
             with st.sidebar:
                 st.subheader("Upload Ticket Data")
                 
-                # File uploader
-                uploaded_file = st.file_uploader("Upload .csv or .xlsx file", type=["csv", "xlsx", "xls"])
+                # File uploader - auto-process when file is uploaded
+                uploaded_file = st.file_uploader("Upload .csv or .xlsx file", type=["csv", "xlsx", "xls"], 
+                                             key="welcome_file_uploader", help="Select a ticket data file to analyze")
                 
+                # Auto-process the file when uploaded
                 if uploaded_file is not None:
-                    if st.button("Process Data"):
+                    # Check if this is a new file that hasn't been processed yet
+                    current_file = getattr(st.session_state, 'current_file', None)
+                    if current_file != uploaded_file.name:
+                        st.session_state.current_file = uploaded_file.name
                         with st.spinner("Processing data..."):
                             success = process_uploaded_file(uploaded_file)
                             if success:
@@ -468,7 +504,9 @@ def main():
             
             # Sidebar content when data is loaded
             with st.sidebar:
-
+                st.title("Ticket Automation Advisor")
+                st.markdown("---")
+                
                 # Option to upload a new file
                 st.subheader("Upload New Data")
                 if st.button("Clear Current Data"):
@@ -478,9 +516,16 @@ def main():
                     initialize_session_state()
                     st.rerun()
                 
-                uploaded_file = st.file_uploader("Upload .csv or .xlsx file", type=["csv", "xlsx", "xls"])
+                # File uploader with auto-processing
+                uploaded_file = st.file_uploader("Upload .csv or .xlsx file", type=["csv", "xlsx", "xls"], 
+                                              key="sidebar_file_uploader")
+                
+                # Auto-process the file when uploaded
                 if uploaded_file is not None:
-                    if st.button("Process Data"):
+                    # Check if this is a new file that hasn't been processed yet
+                    current_file = getattr(st.session_state, 'current_sidebar_file', None)
+                    if current_file != uploaded_file.name:
+                        st.session_state.current_sidebar_file = uploaded_file.name
                         with st.spinner("Processing data..."):
                             success = process_uploaded_file(uploaded_file)
                             if success:
