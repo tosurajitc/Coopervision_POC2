@@ -65,50 +65,47 @@ def apply_custom_css():
     h1, h2, h3 {
         color: #1f4e79;
     }
-    
-    /* Enhanced styling for dropdown - with improved visibility */
-    /* Target the actual dropdown container */
-    [data-testid="stSelectbox"] {
+    /* Style for selectbox */
+    div[data-baseweb="select"] {
+        min-height: 60px;
+        max-width: 100% !important;
         width: 100% !important;
     }
-    
-    /* Style the select box wrapper */
-    [data-testid="stSelectbox"] > div > div {
-        background-color: #e6f0ff !important;
-        border: 3px solid #4c85e5 !important;
-        border-radius: 8px !important;
-        padding: 20px !important;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
-    }
-    
-    /* Make the dropdown text more visible and larger */
-    [data-testid="stSelectbox"] span {
-        font-size: 1.8rem !important;
-        font-weight: bold !important;
-        color: #1f4e79 !important;
-        opacity: 1 !important; /* Ensure text is fully visible */
-    }
-    
-    /* Style the dropdown options panel */
-    div[data-baseweb="popover"] {
-        max-width: calc(100% - 250px) !important; /* Keep it within main panel by excluding sidebar width */
-        right: auto !important; /* Prevent overflow to right */
-        inset-inline-start: auto !important; /* Prevent overflow to left */
-    }
-    
-    /* Style the dropdown options listbox */
-    div[role="listbox"] {
-        max-width: 100% !important;
-        width: auto !important; /* Let it size naturally within the popover */
-        overflow-x: hidden !important; /* Prevent horizontal scrolling */
-    }
-    
-    /* Style individual dropdown options */
-    div[role="option"] {
+    div[data-baseweb="select"] span {
+        max-width: 100%;
+        white-space: normal;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: visible;
         font-size: 1.6rem !important;
         font-weight: bold !important;
-        padding: 15px !important;
-        white-space: normal !important; /* Prevent text overflow */
+        line-height: 1.5 !important;
+    }
+    div[data-baseweb="popover"] {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    div[data-baseweb="popover"] div[role="listbox"] {
+        max-width: 100%;
+        width: 100% !important;
+        font-size: 1.6rem !important;
+    }
+    div[data-baseweb="popover"] div[role="option"] {
+        white-space: normal;
+        padding: 12px;
+        line-height: 1.5;
+        font-size: 1.6rem !important;
+        font-weight: bold !important;
+    }
+    /* Make selectbox text larger */
+    .stSelectbox {
+        font-size: 1.6rem !important;
+        width: 100% !important;
+    }
+    .stSelectbox > div {
+        width: 100% !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -222,7 +219,7 @@ def display_results():
         return
     
     # Create tabs for different views with consistent widths
-    tab_labels = ["Qualitative Analysis", "Patterns", "Automation Suggestions", "💬 Custom Query"]
+    tab_labels = ["Data Overview", "Patterns", "Automation Suggestions", "💬 Custom Query"]
     tabs = st.tabs(tab_labels)
     
     # Tab 1: Data Overview
@@ -235,56 +232,50 @@ def display_results():
             # Standard questions dropdown
             standard_questions = st.session_state.user_query_agent.get_standard_questions()
             
-        # Inside the display_results() function, replace the dropdown section with this:
-
-        # Format questions for display with larger size (h2)
-        st.markdown('<h2 style="font-size: 2.4rem; color: #1f4e79; font-weight: bold;">Standard Questions</h2>', unsafe_allow_html=True)
-
-        # Create just one container with the instruction text
-
-
-        # Add CSS to remove the border from the dropdown
-        st.markdown(f"""
-        <div style="background-color:#e6f0ff; padding:20px; border-radius:5px; margin-bottom:20px; font-size: 1.8rem; font-weight: bold;">
-            <strong style="font-size: 2rem;">Select a question to analyze your ticket data and get Qualititave Response:</strong>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Create a dropdown with questions for selection - place it immediately after
-        question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
-
-        # Auto-answer on selection change
-        previous_question = st.session_state.get("previous_question", "")
-        selected_question = st.selectbox(
-            "", 
-            question_options, 
-            label_visibility="collapsed", 
-            key="data_overview_question_select",
-            index=0 if previous_question == "" else question_options.index(previous_question) if previous_question in question_options else 0
-        )
-
-        # Detect when a new question is selected
-        if selected_question != "Select a question..." and selected_question != previous_question:
-            # Store the current selection for future comparison
-            st.session_state.previous_question = selected_question
+            # Format questions for display with larger size (h2)
+            st.markdown('<h2 style="font-size: 2.4rem; color: #1f4e79; font-weight: bold;">Standard Questions</h2>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 1.3rem; margin-bottom: 15px;">Select a question to analyze your ticket data and get Qualititave Response:</div>', unsafe_allow_html=True)
             
-            # Find the question ID
-            question_id = None
-            for q in standard_questions:
-                if q["question"] == selected_question:
-                    question_id = q["id"]
-                    st.info(q["description"])
-                    break
+            # Create a dropdown with questions for selection
+            question_options = ["Select a question..."] + [q["question"] for q in standard_questions]
             
-            # Auto-answer the question without a button
-            with st.spinner("Analyzing..."):
-                response = st.session_state.user_query_agent.process_query(
-                    selected_question, 
-                    is_standard=True, 
-                    question_id=question_id
-                )
-                st.session_state.user_query_history.append(response)
-                st.rerun()
+            # Style the dropdown container to be larger to accommodate the bigger text
+            st.markdown('<div style="margin-bottom: 30px; margin-top: 15px;">', unsafe_allow_html=True)
+            
+            # Auto-answer on selection change - only create one dropdown
+            previous_question = st.session_state.get("previous_question", "")
+            selected_question = st.selectbox(
+                "", 
+                question_options, 
+                label_visibility="collapsed", 
+                key="data_overview_question_select",
+                index=0 if previous_question == "" else question_options.index(previous_question) if previous_question in question_options else 0
+            )
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Detect when a new question is selected
+            if selected_question != "Select a question..." and selected_question != previous_question:
+                # Store the current selection for future comparison
+                st.session_state.previous_question = selected_question
+                
+                # Find the question ID
+                question_id = None
+                for q in standard_questions:
+                    if q["question"] == selected_question:
+                        question_id = q["id"]
+                        st.info(q["description"])
+                        break
+                
+                # Auto-answer the question without a button
+                with st.spinner("Analyzing..."):
+                    response = st.session_state.user_query_agent.process_query(
+                        selected_question, 
+                        is_standard=True, 
+                        question_id=question_id
+                    )
+                    st.session_state.user_query_history.append(response)
+                    st.rerun()
         
         # If there are query results, display the latest on top
         if st.session_state.user_query_history:
@@ -294,7 +285,7 @@ def display_results():
             # Display question in a colored box with larger font to match heading size
             st.markdown(f"""
             <div style="background-color:#e6f0ff; padding:20px; border-radius:5px; margin-bottom:20px; font-size: 1.8rem; font-weight: bold;">
-                <strong style="font-size: 2rem;">Select a question to analyze your ticket data and get Qualititave Response:</strong>
+                <strong style="font-size: 2rem;">Question:</strong> {latest_query.get('question', 'Unknown query')}
             </div>
             """, unsafe_allow_html=True)
             
@@ -311,6 +302,7 @@ def display_results():
         st.markdown("---")
         
         # Second section: Ticket Data Overview
+
         st.header("Ticket Data Overview")
         
         # Create a table for the overview data
@@ -344,7 +336,7 @@ def display_results():
         # Add some space after the table
         st.markdown("<br>", unsafe_allow_html=True)
             
-        # Resolution band distribution
+        # Resolution band distribution - keep this as before
         if "resolution_band_distribution" in summary_stats:
             st.subheader("Resolution Time Distribution")
             band_data = pd.DataFrame({
@@ -413,48 +405,18 @@ def display_results():
         if st.session_state.user_query_agent:
             st.subheader("Ask Your Own Question")
             st.markdown("Enter any question about the ticket data and press tab to submit:")
+            custom_query = st.text_area("", height=150, placeholder="e.g., What types of issues take the longest to resolve?", label_visibility="collapsed", key="custom_query_tab", on_change=None)
             
-            # Create a form to properly handle submission
-            with st.form(key="custom_query_form"):
-                custom_query = st.text_area("Question", height=150, 
-                                          placeholder="e.g., What types of issues take the longest to resolve?", 
-                                          label_visibility="collapsed")
-                
-                # Submit button inside the form
-                submit_button = st.form_submit_button("Submit Question", use_container_width=True)
-            
-            # Process the form submission
-            if submit_button and custom_query:
+            # Focus on the button when tab is selected
+            submit_button = st.button("Submit Question", key="custom_query_submit_btn", use_container_width=True)
+            if custom_query and submit_button:
                 with st.spinner("Analyzing..."):
-                    try:
-                        # Process the query and get a response
-                        response = st.session_state.user_query_agent.process_query(custom_query)
-                        
-                        # Add to query history
-                        st.session_state.user_query_history.append(response)
-                        
-                        # Display the response immediately
-                        st.markdown("### Response")
-                        
-                        # Display question in a colored box
-                        st.markdown(f"""
-                        <div style="background-color:#e6f0ff; padding:15px; border-radius:5px; margin-bottom:15px;">
-                            <strong>Question:</strong> {custom_query}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Clean up response text
-                        response_text = response.get("response", "No response available.")
-                        if "<think>" in response_text:
-                            response_text = response_text.split("<think>")[0].strip()
-                        if response_text.startswith("Response:"):
-                            response_text = response_text[9:].strip()
-                        
-                        # Display the response
-                        st.write(response_text)
-                    except Exception as e:
-                        st.error(f"Error processing query: {str(e)}")
-                        logger.error(f"Error in custom query: {str(e)}", exc_info=True)
+                    response = st.session_state.user_query_agent.process_query(custom_query)
+                    st.session_state.user_query_history.append(response)
+                    st.rerun()
+        
+        # Empty space - no query history in this tab
+        st.empty()
 
 def main():
     """Main function for the Streamlit app."""
@@ -474,17 +436,16 @@ def main():
             
             **To get started:**
             1. Upload your ticket data file (.csv or .xlsx) using the sidebar
-            2. Check pre defined 10 Qualitative questions from the drop down
-            3. Explore the data pattern and automation suggestions
+            2. Click 'Process Data' to analyze the tickets
+            3. Explore the data visualization and automation suggestions
             4. Ask questions to gain deeper insights
             
             **Your ticket data should include:**
             - Ticket ID/Number
-            - Description - as detailed as possible
+            - Description
             - Open/Close dates
-            - Resolution notes - as detailed as possible
+            - Resolution notes
             - Assignment information
-            - Most importantly detailed Closed notes
             """)
             
             # Sidebar for file upload
@@ -512,7 +473,9 @@ def main():
             
             # Sidebar content when data is loaded
             with st.sidebar:
-  
+                st.title("Ticket Automation Advisor")
+                st.markdown("---")
+                
                 # Option to upload a new file
                 st.subheader("Upload New Data")
                 if st.button("Clear Current Data"):
