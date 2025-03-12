@@ -95,22 +95,51 @@ class InsightFinderAgent:
             self.logger.error("No processed data found in the data package")
             return {"error": "No processed data found"}
         
-        # Extract text data
+        # Extract all relevant text fields
         self.text_data = data_package.get("text_columns", {})
-        if not self.text_data:
-            self.logger.warning("No text columns found in the data package")
         
-        # Find patterns in the data
-        self.patterns = self._identify_patterns()
-        self.logger.info(f"Identified {len(self.patterns)} patterns in the data")
+        # Create comprehensive ticket representations for better analysis
+        self.comprehensive_tickets = []
+        
+        # Determine how many tickets we have from the first available field
+        if self.text_data:
+            first_field = next(iter(self.text_data.values()))
+            num_tickets = len(first_field)
+            
+            for i in range(num_tickets):
+                ticket_info = {}
+                # Collect all available fields for this ticket
+                for field_name, field_data in self.text_data.items():
+                    if i < len(field_data) and field_data[i]:
+                        ticket_info[field_name] = field_data[i]
+                
+                if ticket_info:
+                    self.comprehensive_tickets.append(ticket_info)
+        
+        # Check if we have required fields
+        required_columns = ["close_notes", "resolution"]
+        for column in required_columns:
+            if column not in self.text_data:
+                self.logger.warning(f"'{column}' not found in data - pattern detection may be less accurate")
+        
+        # Log the number of comprehensive tickets created
+        self.logger.info(f"Created {len(self.comprehensive_tickets)} comprehensive ticket representations")
+        
+        # Categorize tickets into predefined categories
+        self._categorize_tickets()
+        self.logger.info(f"Categorized tickets into {len(self.patterns)} patterns")
         
         # Generate automation suggestions
         self.automation_suggestions = self._generate_automation_suggestions()
         self.logger.info(f"Generated {len(self.automation_suggestions)} automation suggestions")
         
+        # Generate structured report
+        report = self.generate_structured_report()
+        
         return {
             "patterns": self.patterns,
-            "automation_suggestions": self.automation_suggestions
+            "automation_suggestions": self.automation_suggestions,
+            "structured_report": report
         }
     
     def _preprocess_text(self, text_list: List[str]) -> List[str]:
@@ -423,6 +452,147 @@ class InsightFinderAgent:
         
         return suggestions
     
+    def generate_structured_report(self) -> Dict[str, Any]:
+        """
+        Generate a structured report of findings and automation opportunities.
+        
+        Returns:
+            Dictionary containing structured report data
+        """
+        report = {
+            "summary": {
+                "total_tickets": len(self.comprehensive_tickets) if hasattr(self, 'comprehensive_tickets') else 0,
+                "categories_identified": len(self.patterns) if self.patterns else 0,
+                "automation_opportunities": len(self.automation_suggestions) if self.automation_suggestions else 0
+            },
+            "top_categories": [],
+            "automation_opportunities": []
+        }
+        
+        # Add top categories
+        if self.patterns:
+            for pattern in self.patterns[:5]:  # Top 5 categories
+                report["top_categories"].append({
+                    "name": pattern.get("category", "Unknown Category"),
+                    "frequency": pattern.get("frequency", 0),
+                    "percentage": pattern.get("percentage", 0),
+                    "keywords": pattern.get("keywords", [])
+                })
+        
+        # Add automation opportunities
+        if self.automation_suggestions:
+            for suggestion in self.automation_suggestions:
+                report["automation_opportunities"].append({
+                    "name": suggestion.get("opportunity_name", "Unknown Opportunity"),
+                    "category": suggestion.get("category", "General"),
+                    "frequency": suggestion.get("frequency", 0),
+                    "root_cause": suggestion.get("problem_root_cause", "Unknown"),
+                    "solution": suggestion.get("suggested_solution", "No solution available"),
+                    "implementation": suggestion.get("implementation_steps", ""),
+                    "benefits": suggestion.get("expected_benefits", "")
+                })
+        
+        return report
+
+
+    def _initialize_categories(self):
+        """Initialize predefined incident categories for classification."""
+        self.categories = {
+            "password_reset": {
+                "keywords": ["password", "reset", "forgot", "locked", "account lock", "credentials"],
+                "count": 0,
+                "examples": []
+            },
+            "application_errors": {
+                "keywords": ["error", "crash", "bug", "not working", "failed", "exception"],
+                "count": 0,
+                "examples": []
+            },
+            "system_updates": {
+                "keywords": ["update", "upgrade", "patch", "version", "install update"],
+                "count": 0,
+                "examples": []
+            },
+            "email_problems": {
+                "keywords": ["email", "outlook", "message", "mailbox", "cannot send", "not receiving"],
+                "count": 0,
+                "examples": []
+            },
+            "access_requests": {
+                "keywords": ["access", "permission", "authorize", "rights", "grant access"],
+                "count": 0,
+                "examples": []
+            },
+            "network_connectivity": {
+                "keywords": ["network", "connect", "wifi", "internet", "vpn", "connection"],
+                "count": 0,
+                "examples": []
+            },
+            "software_installation": {
+                "keywords": ["install", "setup", "download", "deploy", "software"],
+                "count": 0,
+                "examples": []
+            },
+            "account_management": {
+                "keywords": ["account", "user", "profile", "create account", "disable", "enable"],
+                "count": 0,
+                "examples": []
+            }
+        }
+
+
+
+    def _categorize_tickets(self):
+        """Categorize tickets into predefined categories based on text content."""
+        self._initialize_categories()
+        
+        for ticket in self.comprehensive_tickets:
+            # Combine all text fields for this ticket
+            combined_text = " ".join([text for field, text in ticket.items()])
+            combined_text = combined_text.lower()
+            
+            # Check each category
+            for category_name, category_info in self.categories.items():
+                # Check if any keywords match
+                if any(keyword in combined_text for keyword in category_info["keywords"]):
+                    self.categories[category_name]["count"] += 1
+                    
+                    # Add as an example if we don't have too many yet
+                    if len(self.categories[category_name]["examples"]) < 5:
+                        # Create a summary of this ticket
+                        ticket_summary = {
+                            field: text[:100] + ("..." if len(text) > 100 else "")
+                            for field, text in ticket.items()
+                        }
+                        self.categories[category_name]["examples"].append(ticket_summary)
+        
+        # Convert categories to patterns
+        self.patterns = []
+        
+        # Sort categories by count to prioritize
+        sorted_categories = sorted(
+            self.categories.items(), 
+            key=lambda x: x[1]["count"], 
+            reverse=True
+        )
+        
+        # Create patterns from top categories
+        for i, (category_name, category_info) in enumerate(sorted_categories):
+            if category_info["count"] > 0:
+                pattern = {
+                    "id": f"pattern_{i+1}",
+                    "category": category_name.replace("_", " ").title(),
+                    "keywords": category_info["keywords"],
+                    "frequency": category_info["count"],
+                    "sample_notes": [
+                        str(example) for example in category_info["examples"][:3]
+                    ],
+                    "percentage": (category_info["count"] / len(self.comprehensive_tickets)) * 100
+                    if self.comprehensive_tickets else 0
+                }
+                self.patterns.append(pattern)
+
+
     def get_top_suggestions(self, limit: int = 5) -> List[Dict[str, Any]]:
         """
         Get the top automation suggestions.
