@@ -303,49 +303,50 @@ def display_results():
         # Add a divider between sections
         st.markdown("---")
         
-        # Second section: Ticket Data Overview
+# Second section: Ticket Data Overview
         st.header("Ticket Data Overview")
+        
+        # Create a table for the overview data
+        overview_data = []
         
         # File information
         file_info = data_processor_results.get("file_info", {})
         if file_info:
-            st.subheader("File Information")
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.metric("Total Tickets", file_info.get("rows", 0))
-            with col3:
-                st.metric("File Size", f"{file_info.get('size_mb', 0):.2f} MB")
+            overview_data.append(["Total Tickets", str(file_info.get("rows", 0))])
+            overview_data.append(["File Size", f"{file_info.get('size_mb', 0):.2f} MB"])
         
         # Summary statistics
         summary_stats = data_processor_results.get("summary_stats", {})
         if summary_stats:
-            st.subheader("Summary Statistics")
-            
-            # Basic metrics in columns
-            col1, col2, col3 = st.columns(3)
-            
             # Resolution time metrics
             if "avg_resolution_time" in summary_stats:
-                with col1:
-                    st.metric("Avg. Resolution Time", f"{summary_stats['avg_resolution_time']:.2f} hrs")
+                overview_data.append(["Avg. Resolution Time", f"{summary_stats['avg_resolution_time']:.2f} hrs"])
             if "median_resolution_time" in summary_stats:
-                with col2:
-                    st.metric("Median Resolution Time", f"{summary_stats['median_resolution_time']:.2f} hrs")
+                overview_data.append(["Median Resolution Time", f"{summary_stats['median_resolution_time']:.2f} hrs"])
             if "max_resolution_time" in summary_stats:
-                with col3:
-                    st.metric("Max Resolution Time", f"{summary_stats['max_resolution_time']:.2f} hrs")
+                overview_data.append(["Max Resolution Time", f"{summary_stats['max_resolution_time']:.2f} hrs"])
+        
+        # Display data rows without headers
+        for row in overview_data:
+            st.markdown(f"<div style='display: flex; border-bottom: 1px solid #ddd; padding: 8px 0;'>"
+                        f"<div style='flex: 1; font-size: 1.2rem; font-weight: bold;'>{row[0]}</div>"
+                        f"<div style='flex: 1; font-size: 1.2rem;'>{row[1]}</div>"
+                        f"</div>", 
+                       unsafe_allow_html=True)
+        
+        # Add some space after the table
+        st.markdown("<br>", unsafe_allow_html=True)
             
-            # Resolution band distribution
-            if "resolution_band_distribution" in summary_stats:
-                st.subheader("Resolution Time Distribution")
-                band_data = pd.DataFrame({
-                    "Time Band": list(summary_stats["resolution_band_distribution"].keys()),
-                    "Count": list(summary_stats["resolution_band_distribution"].values())
-                })
-                
-                fig = px.bar(band_data, x="Time Band", y="Count", title="Tickets by Resolution Time")
-                st.plotly_chart(fig, use_container_width=True)
+        # Resolution band distribution
+        if "resolution_band_distribution" in summary_stats:
+            st.subheader("Resolution Time Distribution")
+            band_data = pd.DataFrame({
+                "Time Band": list(summary_stats["resolution_band_distribution"].keys()),
+                "Count": list(summary_stats["resolution_band_distribution"].values())
+            })
+            
+            fig = px.bar(band_data, x="Time Band", y="Count", title="Tickets by Resolution Time")
+            st.plotly_chart(fig, use_container_width=True)
     
     # Tab 2: Patterns
     with tabs[1]:
@@ -467,16 +468,17 @@ def main():
             
             **To get started:**
             1. Upload your ticket data file (.csv or .xlsx) using the sidebar
-            2. Click 'Process Data' to analyze the tickets
-            3. Explore the data visualization and automation suggestions
+            2. Check pre defined 10 Qualitative questions from the drop down
+            3. Explore the data pattern and automation suggestions
             4. Ask questions to gain deeper insights
             
             **Your ticket data should include:**
             - Ticket ID/Number
-            - Description
+            - Description - as detailed as possible
             - Open/Close dates
-            - Resolution notes
+            - Resolution notes - as detailed as possible
             - Assignment information
+            - Most importantly detailed Closed notes
             """)
             
             # Sidebar for file upload
