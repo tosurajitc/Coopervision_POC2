@@ -1,25 +1,9 @@
-# Core dependencies
-streamlit==1.28.0
-pandas==2.1.1
-numpy==1.26.0
-matplotlib==3.8.0
-seaborn==0.13.0
-plotly==5.17.0
-
-# File processing
-openpyxl==3.1.2
-xlrd==2.0.1
-python-dotenv==1.0.0
-
-# NLP and analysis
-scikit-learn==1.3.1
-nltk==3.8.1
-spacy==3.7.1
-
-# LLM integration
+streamlit==1.24.0
+pandas==2.0.3
+numpy==1.24.3
 groq==0.4.0
-langchain==0.0.338
-langchain-groq==0.0.3
-
-# Progress tracking
-tqdm==4.66.1
+python-dotenv==1.0.0
+openpyxl==3.1.2
+matplotlib==3.7.2
+plotly==5.15.0
+python-docx==0.8.11

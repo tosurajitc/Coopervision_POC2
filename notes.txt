@@ -13,19 +13,27 @@ Link your local repository to the GitHub repository you mentioned (first time re
 Push the changes to the remote repository: git push -u origin main (or master)
 
 
-automation_advisor/
-├── .env                  # Environment variables (GROQ API keys)
-├── requirements.txt      # Project dependencies
-├── main.py               # Main application entry point
+# GROQ API configuration
+GROQ_API_KEY=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
+GROQ_MODEL_NAME=deepseek-r1-distill-llama-70b
+GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
+
+# Application settings
+DEBUG_MODE=False
+LOG_LEVEL=INFO
+MAX_TOKENS=4096
+TEMPERATURE=0.7
+
+project_root/
+├── main.py
+├── .env
+├── requirement.txt
 ├── agents/
-│   ├── __init__.py       
-│   ├── data_processor.py # Agent 1: Data processing and visualization
-│   ├── insight_finder.py # Agent 2: Pattern identification and automation suggestions
-│   └── user_query.py     # Agent 3: Responds to user queries
-├── utils/
-│   ├── __init__.py
-│   ├── data_cleaner.py   # Data cleaning utilities
-│   └── file_handler.py   # File processing utilities
-└── ui/
-    ├── __init__.py
-    └── streamlit_app.py  # Streamlit UI components
+│   ├── init.py
+│   └── data_processing_agent.py
+│   └── groq_client.py
+│   └── implementation_strategy_agent.py
+│   └── insight_generation_agent.py
+│   └── user_query_agent.py
+│   
+└── sample_tickets.csv

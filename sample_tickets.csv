@@ -1,0 +1,103 @@
+ticket_id,description,resolution,assignment_group,status,priority,created_date,resolved_date,closed_notes,comments
+INC001,"User cannot access email account, password reset needed","Reset the user's password and provided temporary credentials via phone","IT Help Desk",Closed,3,2023-01-01,2023-01-01,"Password reset completed successfully","User called the help desk. Password reset in AD."
+INC002,"Excel report generation failing with error code 1042","Identified corrupted template file and replaced with backup version","Application Support",Closed,2,2023-01-02,2023-01-04,"Fixed the corrupted template and restored report generation","User reports that monthly sales report fails with error code 1042. 
+Investigated templates directory.
+Located corrupted file.
+Restored from backup."
+INC003,"New employee needs access to finance systems","Created user accounts in SAP and Workday with appropriate permissions","Identity Management",Closed,3,2023-01-02,2023-01-05,"Account provisioning completed per onboarding checklist","New hire starting in finance department.
+Paperwork received from HR.
+Created accounts in all required systems."
+INC004,"Server disk space critically low on PROD-DB1","Identified large log files and archived old data to free up space","Infrastructure Support",Closed,1,2023-01-03,2023-01-03,"Emergency cleanup completed, scheduled regular maintenance","Alert triggered at 2am.
+Server at 98% capacity.
+Archived and compressed log files.
+Freed 250GB space."
+INC005,"User unable to connect to VPN from home office","Guided user through reconfiguration of VPN client with new server address","Network Support",Closed,2,2023-01-05,2023-01-05,"VPN connection issue resolved","User working from home office.
+VPN connection failing after recent server migration.
+Provided updated server address.
+Verified connection successful."
+INC006,"Weekly finance report shows incorrect totals","Identified data synchronization issue between systems, manually corrected values","BI Support",Closed,2,2023-01-07,2023-01-09,"Report now showing correct values, scheduled fix for syncing issue","Finance team reports discrepancies in weekly report.
+Comparison with source data showed incorrect totals.
+Identified sync delay between ERP and data warehouse.
+Manually updated report for this week.
+Scheduled permanent fix for sync issue."
+INC007,"Department printer keeps jamming with error code P-103","Replaced worn paper pickup rollers and cleaned paper path","Hardware Support",Closed,3,2023-01-08,2023-01-10,"Printer fully operational after hardware maintenance","Marketing department reports frequent paper jams.
+Inspected paper path.
+Found worn pickup rollers causing multiple sheet feeds.
+Replaced rollers and performed full cleaning."
+INC008,"User needs software license for Adobe Creative Suite","Verified user eligibility, purchased and deployed license through management console","Software Support",Closed,3,2023-01-09,2023-01-11,"License deployed to user's workstation","User requested Adobe Creative Suite.
+Checked department budget approval.
+Purchased license through vendor portal.
+Deployed to user's workstation via management console."
+INC009,"Company website showing 404 errors for product pages","Restored missing files from backup after failed content migration","Web Support",Closed,1,2023-01-10,2023-01-10,"Website fully operational, implemented additional backup verification","Emergency alert: website product pages not loading.
+Found missing files after last night's content migration.
+Restored files from backup.
+Implemented verification step for future migrations."
+INC010,"User cannot access shared network drive","Reset user's network credentials and reconnected mapped drives","Network Support",Closed,3,2023-01-12,2023-01-12,"Network access restored","User unable to access marketing shared drive.
+Account locked after password attempts.
+Reset credentials and reconnected mapped drives."
+INC011,"Mobile app crashing on startup for iOS users","Deployed hotfix to address compatibility issue with iOS 16","Mobile App Support",Closed,1,2023-01-15,2023-01-16,"App stability restored for iOS users","Multiple reports of iOS app crashes.
+Reproduced on iOS 16 devices.
+Identified API compatibility issue.
+Deployed hotfix to app store."
+INC012,"User requesting password reset for HR portal","Verified user identity and reset password","IT Help Desk",Closed,3,2023-01-16,2023-01-16,"Password reset completed","User called requesting password reset for HR portal.
+Verified identity using security questions.
+Reset password and provided temporary credentials."
+INC013,"Data import job failing in CRM system","Fixed corrupt data entry in source file and rerun import job","Application Support",Closed,2,2023-01-17,2023-01-19,"Import job completed successfully","Weekly data import failing in CRM.
+Analyzed log files.
+Found corrupt entry in row 1429 of source file.
+Corrected data and rerun import."
+INC014,"User needs elevated permissions for project repository","Verified approval from manager and granted appropriate access level","Identity Management",Closed,3,2023-01-18,2023-01-20,"Permission update completed","User needs additional access to project files.
+Received approval from department manager.
+Updated permission groups in repository.
+Verified user can access required resources."
+INC015,"Outlook calendar not syncing with mobile devices","Reset Exchange ActiveSync settings and cleared device cache","Email Support",Closed,2,2023-01-19,2023-01-20,"Sync issue resolved","User reports calendar not updating on mobile.
+Tested sync connection.
+Reset ActiveSync settings on server.
+Guided user through clearing app cache.
+Verified successful sync."
+INC016,"Monthly financial report generation delayed","Identified database lock due to long-running query, terminated conflicting process","Database Support",Closed,1,2023-01-20,2023-01-20,"Report generation resumed and completed","Critical alert: monthly financial report stuck.
+Identified blocking query from audit process.
+Terminated conflicting process.
+Coordinated with Finance to verify report accuracy."
+INC017,"New employee needs laptop setup for first day","Prepared laptop with standard image and software according to department requirements","Workstation Support",Closed,3,2023-01-20,2023-01-24,"Equipment ready for employee's first day","New hire starting in Marketing on 1/25.
+Prepared laptop with standard image.
+Installed department-specific software.
+Created documentation for user."
+INC018,"Security certificate expired on internal portal","Generated and deployed new SSL certificate","Security Team",Closed,2,2023-01-22,2023-01-22,"New certificate installed with 2-year validity","Users reporting security warnings on internal portal.
+Confirmed certificate expiration.
+Generated new certificate.
+Deployed to web server and verified secure connection."
+INC019,"User unable to print to network printer","Reinstalled printer drivers and reset print spooler","Desktop Support",Closed,3,2023-01-24,2023-01-24,"Printing functionality restored","User cannot print to department printer.
+Verified network connectivity.
+Reset print spooler service.
+Reinstalled printer drivers.
+Test print successful."
+INC020,"Automated report emails not being delivered","Fixed incorrect distribution list configuration in scheduling system","Email Support",Closed,2,2023-01-25,2023-01-27,"Report delivery resumed","Daily reports not reaching recipients since yesterday.
+Confirmed reports generating correctly.
+Found incorrect email group configuration after recent update.
+Updated distribution list settings.
+Verified delivery of test report."
+INC021,"User requesting access to marketing resource library","Added user to appropriate security group after manager approval","Identity Management",Closed,3,2023-01-26,2023-01-28,"Access granted per approved request","User needs access to marketing materials.
+Received manager approval via ticketing system.
+Added user to Marketing-Resources security group.
+Notified user of access update."
+INC022,"Conference room display not connecting to laptops","Replaced faulty HDMI cable and reset display settings","AV Support",Closed,3,2023-01-27,2023-01-27,"Display functionality restored","Main conference room display issues.
+Tested with multiple laptops.
+Identified faulty HDMI cable.
+Replaced cable and reset display settings.
+Verified connection with test devices."
+INC023,"VPN connection dropping for remote users","Applied network firmware update to address timeout issue","Network Support",Closed,2,2023-01-28,2023-01-30,"VPN stability improved for all users","Multiple users reporting intermittent VPN disconnections.
+Analyzed connection logs.
+Identified timeout issue in firewall firmware.
+Applied vendor-recommended update.
+Monitored connections for stability."
+INC024,"User needs data recovery from corrupted Excel file","Used recovery tools to extract data and rebuild file structure","Data Recovery",Closed,2,2023-01-29,2023-01-31,"Critical data recovered and restored","User accidentally saved over important financial model.
+Previous backup from yesterday incomplete.
+Used Excel recovery tools to extract data.
+Reconstructed file structure.
+Verified data integrity with user."
+INC025,"Department shared mailbox at storage limit","Archived old emails and implemented retention policy","Email Support",Closed,3,2023-01-30,2023-01-31,"Storage issue resolved and future prevention implemented","Sales team unable to receive emails in shared mailbox.
+Mailbox at 99% of storage quota.
+Exported emails older than 1 year to archive.
+Implemented 18-month retention policy.
+Created scheduled task for monthly maintenance."
