@@ -190,7 +190,11 @@ def predefined_questions_tab(processed_data, query_agent):
         "Are certain tickets caused by lack of training or unclear processes?"
     ]
     
-    # Add selectbox for questions to reduce load
+    # Initialize tracking of selected question
+    if 'tab1_current_question_idx' not in st.session_state:
+        st.session_state['tab1_current_question_idx'] = 0
+        
+    # Add selectbox for questions and track changes
     selected_question_idx = st.selectbox(
         "Select a question to analyze:", 
         range(len(questions)),
@@ -198,66 +202,117 @@ def predefined_questions_tab(processed_data, query_agent):
         key="question_selector"
     )
     
-    # Only load analysis for selected question
+    # Check if question has changed
+    if selected_question_idx != st.session_state['tab1_current_question_idx']:
+        # Question changed, reset analysis state
+        st.session_state['tab1_analysis_shown'] = False
+        st.session_state['tab1_impl_plan_shown'] = False
+        st.session_state['tab1_current_question_idx'] = selected_question_idx
+    
+    # Get the selected question
     selected_question = questions[selected_question_idx]
     
-    # Get analysis with a button to avoid double processing
+    # Analysis button and processing
     if 'tab1_analysis_shown' not in st.session_state:
         st.session_state['tab1_analysis_shown'] = False
+    
+    if 'tab1_processing' not in st.session_state:
+        st.session_state['tab1_processing'] = False
         
-    if not st.session_state['tab1_analysis_shown']:
-        if st.button("Get Analysis", key="btn_get_analysis"):
+    # Create a placeholder for the status message
+    status_placeholder = st.empty()
+    
+    # Process analysis in the background when flagged
+    if st.session_state.get('tab1_processing', False):
+        try:
+            # Show a custom spinner with just the text we want
+            status_placeholder.markdown("⏳ Analyzing the question... Please wait.")
+            
+            # Use cached function to get analysis - this happens silently
+            analysis = answer_question(query_agent, selected_question, processed_data)
+            
+            # Store the result and update state
+            st.session_state['tab1_analysis'] = analysis
             st.session_state['tab1_analysis_shown'] = True
             st.session_state['tab1_current_question'] = selected_question
-            st.session_state['tab1_current_question_idx'] = selected_question_idx
+        except Exception as e:
+            st.error(f"Error processing question: {e}")
+            st.session_state['tab1_analysis'] = None
+            # Add rate limit handling
+            if "429" in str(e):
+                st.warning("API rate limit reached. Please wait a moment before trying again.")
+                # Add retry logic with exponential backoff
+                st.info("Retrying in 10 seconds...")
+                time.sleep(10)
+        finally:
+            # Clear the processing flag and the status message
+            st.session_state['tab1_processing'] = False
+            status_placeholder.empty()
+            # Force a rerun to update the UI
+            st.experimental_rerun()
             
-            with st.spinner(f"Analyzing question: {selected_question}"):
-                try:
-                    # Use cached function to get analysis
-                    analysis = answer_question(query_agent, selected_question, processed_data)
-                    st.session_state['tab1_analysis'] = analysis
-                except Exception as e:
-                    st.error(f"Error processing question: {e}")
-                    st.session_state['tab1_analysis'] = None
-                    # Add rate limit handling
-                    if "429" in str(e):
-                        st.warning("API rate limit reached. Please wait a moment before trying again.")
-                        # Add retry logic with exponential backoff
-                        st.info("Retrying in 10 seconds...")
-                        time.sleep(10)
-                        st.experimental_rerun()
+    # Process implementation plan in the background when flagged
+    if 'tab1_impl_processing' not in st.session_state:
+        st.session_state['tab1_impl_processing'] = False
+        
+    if st.session_state.get('tab1_impl_processing', False):
+        try:
+            # Show a custom spinner with just the text we want
+            status_placeholder.markdown("⏳ Generating implementation plan... Please wait.")
+            
+            # Generate implementation plan - this happens silently
+            implementation_plan = generate_implementation_plan(
+                query_agent,
+                st.session_state.get('tab1_current_question'), 
+                processed_data
+            )
+            
+            # Store the result and update state
+            st.session_state['tab1_impl_plan'] = implementation_plan
+            st.session_state['tab1_impl_plan_shown'] = True
+        except Exception as e:
+            st.error(f"Error generating implementation plan: {e}")
+            st.session_state['tab1_impl_plan'] = None
+        finally:
+            # Clear the processing flag and the status message
+            st.session_state['tab1_impl_processing'] = False
+            status_placeholder.empty()
+            # Force a rerun to update the UI
+            st.experimental_rerun()
+    
+    # Show analysis button if analysis is not shown yet
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if not st.session_state['tab1_analysis_shown']:
+            if st.button("Get Analysis", key="btn_get_analysis"):
+                # Set the processing flag to trigger the background operation
+                st.session_state['tab1_processing'] = True
+                st.experimental_rerun()
+        else:
+            # Show reset button when analysis is displayed
+            if st.button("New Analysis", key="btn_new_analysis"):
+                st.session_state['tab1_analysis_shown'] = False
+                st.session_state['tab1_impl_plan_shown'] = False
+                st.experimental_rerun()
     
     # Display analysis if it has been generated
-    if st.session_state.get('tab1_analysis_shown', False):
-        current_q_idx = st.session_state.get('tab1_current_question_idx')
-        current_q = st.session_state.get('tab1_current_question')
+    if st.session_state.get('tab1_analysis_shown', False) and not st.session_state.get('tab1_processing', False):
         analysis = st.session_state.get('tab1_analysis')
         
         if analysis:
-            st.markdown(f"### Analysis for Question {current_q_idx+1}")
+            st.markdown(f"### Analysis for Question {selected_question_idx+1}")
             st.markdown(analysis)
             
-            # Implementation plan button with unique key
+            # Implementation plan button
             plan_key = "tab1_impl_plan_shown"
             if plan_key not in st.session_state:
                 st.session_state[plan_key] = False
                 
-            if not st.session_state[plan_key]:
+            if not st.session_state[plan_key] and not st.session_state.get('tab1_impl_processing', False):
                 if st.button("Get Implementation Plan", key="btn_tab1_impl_plan"):
-                    st.session_state[plan_key] = True
-                    
-                    with st.spinner("Generating implementation plan..."):
-                        try:
-                            # Use cached function with modified prompt to avoid thinking block
-                            implementation_plan = generate_implementation_plan(
-                                query_agent,
-                                current_q, 
-                                processed_data
-                            )
-                            st.session_state['tab1_impl_plan'] = implementation_plan
-                        except Exception as e:
-                            st.error(f"Error generating implementation plan: {e}")
-                            st.session_state['tab1_impl_plan'] = None
+                    # Set the processing flag to trigger the background operation
+                    st.session_state['tab1_impl_processing'] = True
+                    st.experimental_rerun()
             
             # Display implementation plan if it has been generated
             if st.session_state.get(plan_key, False):
@@ -265,13 +320,6 @@ def predefined_questions_tab(processed_data, query_agent):
                 if impl_plan:
                     st.markdown("### Implementation Plan")
                     st.markdown(impl_plan)
-        
-        # Add reset button
-        if st.button("Reset Analysis", key="btn_reset_tab1"):
-            st.session_state['tab1_analysis_shown'] = False
-            if 'tab1_impl_plan_shown' in st.session_state:
-                st.session_state['tab1_impl_plan_shown'] = False
-            st.experimental_rerun()
 
 def automation_opportunities_tab(processed_data, insight_agent, implementation_agent):
     """
@@ -300,70 +348,89 @@ def automation_opportunities_tab(processed_data, insight_agent, implementation_a
     if 'tab2_insights_shown' not in st.session_state:
         st.session_state['tab2_insights_shown'] = False
         
+    # Create a placeholder for the status message
+    status_placeholder = st.empty()
+        
+    # Processing flag for insights generation
+    if 'tab2_processing' not in st.session_state:
+        st.session_state['tab2_processing'] = False
+    
+    # Process insights in the background when flagged
+    if st.session_state.get('tab2_processing', False):
+        try:
+            # Show a custom spinner with just the text we want
+            status_placeholder.markdown("⏳ Generating insights from ticket data... Please wait.")
+            
+            # Explicitly request 5 insights
+            # First check if the generate_insights method accepts a num_insights parameter
+            import inspect
+            sig = inspect.signature(insight_agent.generate_insights)
+            
+            if 'num_insights' in sig.parameters:
+                # If the method accepts num_insights, pass it
+                opportunities = generate_insights(insight_agent, processed_data, num_insights=5)
+            else:
+                # If the method doesn't accept num_insights, we need a workaround
+                # We'll modify the prompt passed to the agent to request 5 insights
+                original_prompt = getattr(insight_agent, 'prompt_template', None)
+                
+                if original_prompt and hasattr(insight_agent, 'prompt_template'):
+                    # Temporarily modify the prompt template to request 5 insights
+                    if "Generate insights" in insight_agent.prompt_template:
+                        original_prompt = insight_agent.prompt_template
+                        insight_agent.prompt_template = insight_agent.prompt_template.replace(
+                            "Generate insights", 
+                            "Generate exactly 5 insights"
+                        )
+                
+                # Generate the insights
+                opportunities = generate_insights(insight_agent, processed_data)
+                
+                # Restore the original prompt if it was modified
+                if original_prompt and hasattr(insight_agent, 'prompt_template'):
+                    insight_agent.prompt_template = original_prompt
+            
+            # If we still don't have 5 insights, pad the list
+            if len(opportunities) < 5:
+                # Pad with placeholder opportunities
+                while len(opportunities) < 5:
+                    idx = len(opportunities) + 1
+                    opportunities.append({
+                        'title': f"Potential Opportunity {idx}",
+                        'description': "Insufficient data to generate this opportunity automatically. Consider manually reviewing tickets for additional insights.",
+                        'issue': "Not enough data for automated analysis",
+                        'solution': "Manual review recommended",
+                        'justification': "AI requires more diverse ticket data to identify additional patterns",
+                        'impact': "Unknown - requires human analysis"
+                    })
+            
+            st.session_state['tab2_opportunities'] = opportunities
+            st.session_state['tab2_insights_shown'] = True
+        except Exception as e:
+            st.error(f"Error generating opportunities: {e}")
+            st.session_state['tab2_opportunities'] = None
+            # Add rate limit handling
+            if "429" in str(e):
+                st.warning("API rate limit reached. Please wait a moment before trying again.")
+                # Add retry logic with exponential backoff
+                st.info("Retrying in 10 seconds...")
+                time.sleep(10)
+        finally:
+            # Clear the processing flag and the status message
+            st.session_state['tab2_processing'] = False
+            status_placeholder.empty()
+            # Force a rerun to update the UI
+            st.experimental_rerun()
+    
+    # Button to generate insights
     if not st.session_state['tab2_insights_shown']:
         if st.button("Generate Insights", key="btn_generate_insights"):
-            st.session_state['tab2_insights_shown'] = True
-            with st.spinner("Generating insights... This might take a moment."):
-                try:
-                    # Explicitly request 5 insights
-                    # First check if the generate_insights method accepts a num_insights parameter
-                    import inspect
-                    sig = inspect.signature(insight_agent.generate_insights)
-                    
-                    if 'num_insights' in sig.parameters:
-                        # If the method accepts num_insights, pass it
-                        opportunities = generate_insights(insight_agent, processed_data, num_insights=5)
-                    else:
-                        # If the method doesn't accept num_insights, we need a workaround
-                        # We'll modify the prompt passed to the agent to request 5 insights
-                        original_prompt = getattr(insight_agent, 'prompt_template', None)
-                        
-                        if original_prompt and hasattr(insight_agent, 'prompt_template'):
-                            # Temporarily modify the prompt template to request 5 insights
-                            if "Generate insights" in insight_agent.prompt_template:
-                                original_prompt = insight_agent.prompt_template
-                                insight_agent.prompt_template = insight_agent.prompt_template.replace(
-                                    "Generate insights", 
-                                    "Generate exactly 5 insights"
-                                )
-                        
-                        # Generate the insights
-                        opportunities = generate_insights(insight_agent, processed_data)
-                        
-                        # Restore the original prompt if it was modified
-                        if original_prompt and hasattr(insight_agent, 'prompt_template'):
-                            insight_agent.prompt_template = original_prompt
-                    
-                    # If we still don't have 5 insights, pad the list
-                    if len(opportunities) < 5:
-                        st.warning(f"Only {len(opportunities)} insights were generated. Some placeholders will be used.")
-                        
-                        # Pad with placeholder opportunities
-                        while len(opportunities) < 5:
-                            idx = len(opportunities) + 1
-                            opportunities.append({
-                                'title': f"Potential Opportunity {idx}",
-                                'description': "Insufficient data to generate this opportunity automatically. Consider manually reviewing tickets for additional insights.",
-                                'issue': "Not enough data for automated analysis",
-                                'solution': "Manual review recommended",
-                                'justification': "AI requires more diverse ticket data to identify additional patterns",
-                                'impact': "Unknown - requires human analysis"
-                            })
-                    
-                    st.session_state['tab2_opportunities'] = opportunities
-                except Exception as e:
-                    st.error(f"Error generating opportunities: {e}")
-                    st.session_state['tab2_opportunities'] = None
-                    # Add rate limit handling
-                    if "429" in str(e):
-                        st.warning("API rate limit reached. Please wait a moment before trying again.")
-                        # Add retry logic with exponential backoff
-                        st.info("Retrying in 10 seconds...")
-                        time.sleep(10)
-                        st.experimental_rerun()
+            # Set the processing flag to trigger the background operation
+            st.session_state['tab2_processing'] = True
+            st.experimental_rerun()
     
     # Display opportunities if they have been generated
-    if st.session_state.get('tab2_insights_shown', False):
+    if st.session_state.get('tab2_insights_shown', False) and not st.session_state.get('tab2_processing', False):
         opportunities = st.session_state.get('tab2_opportunities')
         
         if opportunities:
@@ -373,16 +440,28 @@ def automation_opportunities_tab(processed_data, insight_agent, implementation_a
             
             # Display all opportunities as structured expandable blocks
             for i, opportunity in enumerate(displayed_opportunities):
-                with st.expander(f"Opportunity {i+1}: {opportunity['title']}", expanded=True):
+                # Extract title for the expander - use the opportunity title instead of "Opportunity X"
+                opportunity_title = opportunity['title']
+                
+                # If the title is very long, truncate it for the expander
+                display_title = opportunity_title
+                if len(display_title) > 80:  # Truncate if too long
+                    display_title = display_title[:77] + "..."
+                
+                # Use the title in the expander heading
+                with st.expander(f"#{i+1}: {display_title}", expanded=True):
+                    # Full title (even if truncated in expander)
+                    st.markdown(f"### {opportunity_title}")
+                    
                     # Display structured information
-                    st.markdown("### Issue Identified")
+                    st.markdown("#### Issue Identified")
                     if 'issue' in opportunity:
                         st.markdown(opportunity['issue'])
                     else:
                         # Extract issue from description if not available as separate field
                         st.markdown(opportunity['description'].split('\n')[0] if '\n' in opportunity['description'] else opportunity['description'])
                     
-                    st.markdown("### Proposed Solution")
+                    st.markdown("#### Proposed Solution")
                     if 'solution' in opportunity:
                         st.markdown(opportunity['solution'])
                     else:
@@ -390,7 +469,7 @@ def automation_opportunities_tab(processed_data, insight_agent, implementation_a
                         parts = opportunity['description'].split('\n')
                         st.markdown(parts[1] if len(parts) > 1 else "Solution details included in implementation plan")
                     
-                    st.markdown("### Justification")
+                    st.markdown("#### Justification")
                     if 'justification' in opportunity:
                         st.markdown(opportunity['justification'])
                     else:
@@ -398,7 +477,7 @@ def automation_opportunities_tab(processed_data, insight_agent, implementation_a
                         parts = opportunity['description'].split('\n')
                         st.markdown(parts[2] if len(parts) > 2 else "See implementation plan for full justification")
                     
-                    st.markdown("### Automation Impact")
+                    st.markdown("#### Automation Impact")
                     if 'impact' in opportunity:
                         st.markdown(opportunity['impact'])
                     else:
@@ -410,25 +489,45 @@ def automation_opportunities_tab(processed_data, insight_agent, implementation_a
                     plan_key = f"tab2_impl_plan_shown_{i}"
                     if plan_key not in st.session_state:
                         st.session_state[plan_key] = False
-                        
-                    if not st.session_state[plan_key]:
-                        if st.button("Get Implementation Plan", key=f"btn_tab2_impl_plan_{i}"):
-                            st.session_state[plan_key] = True
+                    
+                    # Implementation plan processing flag
+                    impl_processing_key = f"tab2_impl_processing_{i}"
+                    if impl_processing_key not in st.session_state:
+                        st.session_state[impl_processing_key] = False
+                    
+                    # Process implementation plan in the background when flagged
+                    if st.session_state.get(impl_processing_key, False):
+                        try:
+                            # Show a custom spinner
+                            impl_status = st.empty()
+                            impl_status.markdown("⏳ Generating implementation plan... Please wait.")
                             
-                            with st.spinner("Generating implementation plan..."):
-                                try:
-                                    # Generate plan for this opportunity
-                                    plan = generate_plan_for_opportunity(implementation_agent, opportunity)
-                                    st.session_state[f'tab2_impl_plan_{i}'] = plan
-                                except Exception as e:
-                                    st.error(f"Error generating implementation plan: {e}")
-                                    st.session_state[f'tab2_impl_plan_{i}'] = None
+                            # Generate plan for this opportunity
+                            plan = generate_plan_for_opportunity(implementation_agent, opportunity)
+                            st.session_state[f'tab2_impl_plan_{i}'] = plan
+                            st.session_state[plan_key] = True
+                        except Exception as e:
+                            st.error(f"Error generating implementation plan: {e}")
+                            st.session_state[f'tab2_impl_plan_{i}'] = None
+                        finally:
+                            # Clear the processing flag and the status message
+                            st.session_state[impl_processing_key] = False
+                            impl_status.empty()
+                            # Force a rerun to update the UI
+                            st.experimental_rerun()
+                        
+                    # Implementation plan button
+                    if not st.session_state[plan_key] and not st.session_state.get(impl_processing_key, False):
+                        if st.button(f"Get Implementation Plan", key=f"btn_tab2_impl_plan_{i}"):
+                            # Set the processing flag to trigger the background operation
+                            st.session_state[impl_processing_key] = True
+                            st.experimental_rerun()
                     
                     # Display implementation plan if it has been generated
                     if st.session_state.get(plan_key, False):
                         impl_plan = st.session_state.get(f'tab2_impl_plan_{i}')
                         if impl_plan:
-                            st.markdown("### Implementation Plan")
+                            st.markdown("#### Implementation Plan")
                             st.markdown(impl_plan)
         
         # Add reset button
@@ -555,7 +654,7 @@ def main():
         return
     
     # Title
-    st.title("AI-Driven Ticket Analysis Orchestrator")
+    st.title("AI-Driven Qualitative Ticket Analysis")
     
     # File upload
     processed_data, keywords = handle_file_upload(data_agent)
