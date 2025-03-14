@@ -666,7 +666,7 @@ def display_data_requirements_guide():
     """
     Displays guidance about data requirements and quality for optimal analysis
     """
-    with st.sidebar.expander("📊 Data Requirements Guide", expanded=False):
+    with st.sidebar.expander("Data Requirements Guide", expanded=False):
         st.markdown("""
         ### Required Fields
         For optimal analysis, your ticket data should include these fields:
@@ -890,7 +890,7 @@ def main():
         return
     
     # Title
-    st.title("AI-Driven Ticket Analysis Orchestrator")
+    st.title("AI-Driven Qualitative Ticket Analysis")
     
     # Display data requirements guide in sidebar
     display_data_requirements_guide()
