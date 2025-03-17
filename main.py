@@ -214,9 +214,10 @@ def predefined_questions_tab(processed_data, query_agent, implementation_agent):
     """
     st.header("Predefined Automation Analysis Questions")
     
-    # Predefined questions
-    questions = [
-        "What are the most frequently reported pain points in ticket descriptions?",
+    # Define all 20 possible questions
+    all_questions = [
+        # Original 10 questions
+        "What are the most frequently reported issues in the dataset?",
         "Which ticket resolutions involve repetitive manual steps?",
         "Are there tickets resolvable through self-service options?",
         "Which issues experience delays due to team dependencies?",
@@ -225,12 +226,58 @@ def predefined_questions_tab(processed_data, query_agent, implementation_agent):
         "Which tickets involve extensive manual data entry?",
         "Are there communication gaps between users and support teams?",
         "Do resolution notes indicate recurring workarounds?",
-        "Are certain tickets caused by lack of training or unclear processes?"
+        "Are certain tickets caused by lack of training or unclear processes?",
+        
+        # 10 additional questions
+        "What patterns exist in tickets that require multiple interactions before resolution?",
+        "Which scheduled or routine tasks could be automated with minimal human oversight?",
+        "What approval workflows create the most significant bottlenecks?",
+        "Which tickets involve simple informational requests that could be handled by knowledge base enhancements?",
+        "What ticket resolution steps follow predictable patterns that could be standardized?",
+        "Which system-generated alerts create redundant tickets that could be prevented?",
+        "What are the most time-consuming categories of tickets based on resolution time?",
+        "Which tickets show evidence of manual data verification that could be automated?",
+        "Are there recurring seasonal or cyclical patterns in ticket submissions?",
+        "What documentation gaps can be identified from frequent user questions?"
     ]
+    
+    # Check if we need to generate a new set of random questions
+    if 'random_questions' not in st.session_state or 'tab1_reset_questions' in st.session_state and st.session_state['tab1_reset_questions']:
+        # Generate 10 random questions without replacement
+        import random
+        selected_indices = random.sample(range(len(all_questions)), 10)
+        selected_indices.sort()  # Sort the indices for consistent ordering
+        st.session_state['random_questions'] = [all_questions[i] for i in selected_indices]
+        st.session_state['random_question_indices'] = selected_indices
+        
+        # Reset the flag if it exists
+        if 'tab1_reset_questions' in st.session_state:
+            st.session_state['tab1_reset_questions'] = False
+    
+    # Use the stored random questions
+    questions = st.session_state['random_questions']
     
     # Initialize tracking of selected question
     if 'tab1_current_question_idx' not in st.session_state:
         st.session_state['tab1_current_question_idx'] = 0
+    
+    # Display button to regenerate random questions
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if st.button("🔄 Refresh Questions", key="btn_refresh_questions"):
+            st.session_state['tab1_reset_questions'] = True
+            # Also reset any analysis that might have been done
+            if 'tab1_analysis_shown' in st.session_state:
+                st.session_state['tab1_analysis_shown'] = False
+            if 'tab1_impl_plan_shown' in st.session_state:
+                st.session_state['tab1_impl_plan_shown'] = False
+            st.experimental_rerun()
+    
+    with col2:
+        # Show which questions are being displayed
+        if 'random_question_indices' in st.session_state:
+            indices = [str(i+1) for i in st.session_state['random_question_indices']]
+            #st.info(f"Showing questions {', '.join(indices)} from the question bank")
         
     # Add selectbox for questions and track changes
     selected_question_idx = st.selectbox(

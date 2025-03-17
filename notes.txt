@@ -3,7 +3,7 @@ Activate virtual environment: .venv\Scripts\activate
 How to activate .env file: pip install python-dotenv then from dotenv import load_dotenv then add this function load_dotenv()  # Load variables from .env into the environment
 Run the requirement.txt file: pip install -r requirements.txt
 create requirement.txt file: pip freeze > requirements.txt
-to run the program : streamlit run main.py
+to run the program : 
 
 GIT PUSH Steps: 
 In the terminal, initialize a new Git repository: git init
