@@ -16,6 +16,8 @@ If git hub fails then:
 git remote rename origin old-origin
 git remote add origin https://github.com/tosurajitc/Coopervision_POC2.git
 
+Or git pull origin main --rebase
+
 
 # GROQ API configuration
 GROQ_API_KEY=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
