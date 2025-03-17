@@ -81,4 +81,4 @@ Additional fields that enhance analysis:
 
 ## License
 
-This project is proprietary and confidential for Coopervision use only.
+NA
