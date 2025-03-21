@@ -77,39 +77,52 @@ def call_groq_api(client, model_name, prompt, max_tokens=1000, temperature=0.2):
         
         # Try fallback model
     try:
-        fallback_model = "llama3-70b-8192"
-        print(f"Trying fallback model: {fallback_model}")
-        
-        # Check if prompt is too large for fallback model
-        token_estimate = len(prompt) / 4  # Rough estimate of tokens (4 chars ≈ 1 token)
-        was_truncated = False
-        
-        if token_estimate > 6000:
-            print(f"Prompt is too large (approx {token_estimate} tokens), truncating for fallback model")
-            # Truncate to safer size - roughly 6000 tokens
-            shortened_prompt = prompt[:24000]  # 24000 chars ≈ 6000 tokens
-            messages = [{"role": "user", "content": shortened_prompt}]
-            was_truncated = True
-        else:
-            messages = [{"role": "user", "content": prompt}]
-        
-        response = client.chat.completions.create(
-            model=fallback_model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        
-        response_text = response.choices[0].message.content
-        
-        # Only add warning if we actually truncated
-        if was_truncated:
-            response_text = "Note: Your query was truncated due to token limits. Results may be incomplete.\n\n" + response_text
-            
-        return response_text, None
-        
+                fallback_model = "gemma2-9b-it"
+                print(f"Trying fallback model: {fallback_model}")
+                
+                # Safely reduce prompt size to stay under token limits
+                # Calculate approx 5950 tokens (slightly under 6000 limit)
+                shortened_prompt = prompt[:23800]  # Assuming ~4 chars per token
+                
+                print(f"Original prompt length: {len(prompt)} chars, shortened to: {len(shortened_prompt)} chars")
+                
+                response = client.chat.completions.create(
+                    model=fallback_model,
+                    messages=[{"role": "user", "content": shortened_prompt}],
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                
+                response_text = response.choices[0].message.content
+                
+                # Only add truncation warning if we actually truncated
+                if len(shortened_prompt) < len(prompt):
+                    response_text = "Note: Your query was truncated due to token limits. Results may be incomplete.\n\n" + response_text
+                
+                return response_text, None
+                
     except Exception as e2:
         error_msg = f"Error with fallback model: {str(e2)}"
         print(error_msg)
         print(traceback.format_exc())
+        
+        # If rate limit error, try with even shorter prompt
+        if "rate_limit_exceeded" in str(e2):
+            try:
+                print("Rate limit exceeded, trying with smaller prompt...")
+                very_short_prompt = prompt[:20000]  # Even smaller, ~5000 tokens
+                
+                response = client.chat.completions.create(
+                    model=fallback_model,
+                    messages=[{"role": "user", "content": very_short_prompt}],
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                
+                response_text = response.choices[0].message.content
+                return "Note: Significant truncation was required due to token limits. Results may be incomplete.\n\n" + response_text, None
+            except Exception as e3:
+                return None, f"All fallback attempts failed: {str(e3)}"
+        
         return None, error_msg
+        

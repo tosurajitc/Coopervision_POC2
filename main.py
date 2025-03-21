@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import time
 import random
 import re
-
+import traceback
 # Import your custom agents
 from agents.data_processing_agent import DataProcessingAgent
 from agents.insight_generation_agent import InsightGenerationAgent
@@ -1023,4 +1023,25 @@ def main():
         """)
 
 if __name__ == "__main__":
-    main()
+    #main()
+
+
+    if os.getenv("TEST_GROQ_MODEL", "false").lower() == "true":
+            print("Running GROQ model test...")
+            import groq
+            
+            client = groq.Client(api_key=os.getenv("GROQ_API_KEY"))
+            
+            try:
+                test_response = client.chat.completions.create(
+                    model="deepseek-r1-distill-llama-70b",
+                    messages=[{"role": "user", "content": "Hello, how are you?"}],
+                    max_tokens=100
+                )
+                print("Test successful!")
+                print("Response:", test_response.choices[0].message.content)
+            except Exception as e:
+                print("Test failed with error:", repr(e))
+                print("Error type:", type(e).__name__)
+                print(traceback.format_exc())    
+    main()            
