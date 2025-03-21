@@ -76,22 +76,40 @@ def call_groq_api(client, model_name, prompt, max_tokens=1000, temperature=0.2):
         print(traceback.format_exc())
         
         # Try fallback model
-        try:
-            fallback_model = "llama3-8b-8192"
-            print(f"Trying fallback model: {fallback_model}")
+    try:
+        fallback_model = "llama3-70b-8192"
+        print(f"Trying fallback model: {fallback_model}")
+        
+        # Check if prompt is too large for fallback model
+        token_estimate = len(prompt) / 4  # Rough estimate of tokens (4 chars ≈ 1 token)
+        was_truncated = False
+        
+        if token_estimate > 6000:
+            print(f"Prompt is too large (approx {token_estimate} tokens), truncating for fallback model")
+            # Truncate to safer size - roughly 6000 tokens
+            shortened_prompt = prompt[:24000]  # 24000 chars ≈ 6000 tokens
+            messages = [{"role": "user", "content": shortened_prompt}]
+            was_truncated = True
+        else:
+            messages = [{"role": "user", "content": prompt}]
+        
+        response = client.chat.completions.create(
+            model=fallback_model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
+        
+        response_text = response.choices[0].message.content
+        
+        # Only add warning if we actually truncated
+        if was_truncated:
+            response_text = "Note: Your query was truncated due to token limits. Results may be incomplete.\n\n" + response_text
             
-            response = client.chat.completions.create(
-                model=fallback_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            
-            response_text = response.choices[0].message.content
-            return response_text, None
-            
-        except Exception as e2:
-            error_msg = f"Error with fallback model: {str(e2)}"
-            print(error_msg)
-            print(traceback.format_exc())
-            return None, error_msg
+        return response_text, None
+        
+    except Exception as e2:
+        error_msg = f"Error with fallback model: {str(e2)}"
+        print(error_msg)
+        print(traceback.format_exc())
+        return None, error_msg

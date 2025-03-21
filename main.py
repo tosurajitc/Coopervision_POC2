@@ -214,41 +214,50 @@ def predefined_questions_tab(processed_data, query_agent, implementation_agent):
     """
     st.header("Predefined Automation Analysis Questions")
     
-    # Define all 20 possible questions
+    # Define all possible questions
     all_questions = [
         # Original 10 questions
         "What are the most frequently reported issues in the dataset?",
         "Are tickets often misrouted or reassigned?",
-        "Which category of incidents require datafix?",
-        "Which issues are specific to a particular country?",
-        "Which incidents indicate escalation?",
-        "How many customer facing documents failed in the last year?",
         "Do users report similar issues that could be proactively prevented?",
         "Are there communication gaps between users and support teams?",
         "Do resolution notes indicate recurring workarounds?",
-        "Which category of incidents consume the greatest number of hours?",
         
         # 10 additional questions
         "What patterns exist in tickets that require multiple interactions before resolution?",
         "Which scheduled or routine tasks could be automated with minimal human oversight?",
         "What approval workflows create the most significant bottlenecks?",
-        "Which category of incidents require datafix?",
-        "Which issues are specific to a particular country?",
-        "Which incidents indicate escalation?",
-        "How many customer facing documents failed in the last year?",
-        "Which category of incidents consume the greatest number of hours?",
         "Are there recurring seasonal or cyclical patterns in ticket submissions?",
         "What documentation gaps can be identified from frequent user questions?"
     ]
     
+    # Define the 5 required questions that must always appear
+    required_questions = [
+        "Which category of incidents consume the greatest number of hours?",
+        "Which category of incidents require datafix?",
+        "Which issues are specific to a particular country?",
+        "Which incidents indicate escalation?",
+        "How many customer facing documents failed in the last year?"
+    ]
+    
     # Check if we need to generate a new set of random questions
     if 'random_questions' not in st.session_state or 'tab1_reset_questions' in st.session_state and st.session_state['tab1_reset_questions']:
-        # Generate 10 random questions without replacement
+        # First, include all required questions
+        selected_questions = required_questions.copy()
+        
+        # Then, randomly select 5 more questions from the pool of other questions
         import random
-        selected_indices = random.sample(range(len(all_questions)), 10)
-        selected_indices.sort()  # Sort the indices for consistent ordering
-        st.session_state['random_questions'] = [all_questions[i] for i in selected_indices]
-        st.session_state['random_question_indices'] = selected_indices
+        remaining_slots = 10 - len(required_questions)  # Should be 5
+        selected_additional = random.sample(all_questions, remaining_slots)
+        
+        # Combine the required and additional questions
+        selected_questions.extend(selected_additional)
+        
+        # Shuffle the order to avoid having the required questions always at the top
+        random.shuffle(selected_questions)
+        
+        # Store in session state
+        st.session_state['random_questions'] = selected_questions
         
         # Reset the flag if it exists
         if 'tab1_reset_questions' in st.session_state:
@@ -273,12 +282,6 @@ def predefined_questions_tab(processed_data, query_agent, implementation_agent):
                 st.session_state['tab1_impl_plan_shown'] = False
             st.experimental_rerun()
     
-    with col2:
-        # Show which questions are being displayed
-        if 'random_question_indices' in st.session_state:
-            indices = [str(i+1) for i in st.session_state['random_question_indices']]
-            #st.info(f"Showing questions {', '.join(indices)} from the question bank")
-        
     # Add selectbox for questions and track changes
     selected_question_idx = st.selectbox(
         "Select a question to analyze:", 

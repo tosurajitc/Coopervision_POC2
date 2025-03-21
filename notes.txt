@@ -12,9 +12,11 @@ Commit the files with a message: git commit -m "Initial commit"
 Link your local repository to the GitHub repository you mentioned (first time required): git remote add origin https://github.ibm.com/IBM-AI-Automation/Ticket-Qualitative-Analysis.git
 Push the changes to the remote repository: git push -u origin main (or master)
 
+
+https://github.com/tosurajitc/Coopervision_POC2.git
 If git hub fails then:
 git remote rename origin old-origin
-git remote add origin https://github.com/tosurajitc/Coopervision_POC2.git
+git remote add origin 
 
 Or git pull origin main --rebase
 
