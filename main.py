@@ -218,25 +218,25 @@ def predefined_questions_tab(processed_data, query_agent, implementation_agent):
     all_questions = [
         # Original 10 questions
         "What are the most frequently reported issues in the dataset?",
-        "Which ticket resolutions involve repetitive manual steps?",
-        "Are there tickets resolvable through self-service options?",
-        "Which issues experience delays due to team dependencies?",
         "Are tickets often misrouted or reassigned?",
+        "Which category of incidents require datafix?",
+        "Which issues are specific to a particular country?",
+        "Which incidents indicate escalation?",
+        "How many customer facing documents failed in the last year?",
         "Do users report similar issues that could be proactively prevented?",
-        "Which tickets involve extensive manual data entry?",
         "Are there communication gaps between users and support teams?",
         "Do resolution notes indicate recurring workarounds?",
-        "Are certain tickets caused by lack of training or unclear processes?",
+        "Which category of incidents consume the greatest number of hours?",
         
         # 10 additional questions
         "What patterns exist in tickets that require multiple interactions before resolution?",
         "Which scheduled or routine tasks could be automated with minimal human oversight?",
         "What approval workflows create the most significant bottlenecks?",
-        "Which tickets involve simple informational requests that could be handled by knowledge base enhancements?",
-        "What ticket resolution steps follow predictable patterns that could be standardized?",
-        "Which system-generated alerts create redundant tickets that could be prevented?",
-        "What are the most time-consuming categories of tickets based on resolution time?",
-        "Which tickets show evidence of manual data verification that could be automated?",
+        "Which category of incidents require datafix?",
+        "Which issues are specific to a particular country?",
+        "Which incidents indicate escalation?",
+        "How many customer facing documents failed in the last year?",
+        "Which category of incidents consume the greatest number of hours?",
         "Are there recurring seasonal or cyclical patterns in ticket submissions?",
         "What documentation gaps can be identified from frequent user questions?"
     ]
