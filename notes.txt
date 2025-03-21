@@ -18,7 +18,7 @@ git remote add origin https://github.com/tosurajitc/Coopervision_POC2.git
 
 Or git pull origin main --rebase
 
-
+Check Streamlit projects: https://share.streamlit.io/
 Live: https://coopervisionpoc2-3mperhzmvysa5ubtm5ijzq.streamlit.app/
 
 # Application settings
