@@ -11,6 +11,7 @@ from agents.data_processing_agent import DataProcessingAgent
 from agents.insight_generation_agent import InsightGenerationAgent
 from agents.implementation_strategy_agent import ImplementationStrategyAgent
 from agents.user_query_agent import UserQueryAgent
+from visualization.ticket_visualization_component import TicketVisualizationComponent
 
 # Enable caching for expensive function calls
 @st.cache_data(ttl=3600)  # Cache for 1 hour
@@ -923,6 +924,23 @@ TKT-1001,2023-01-05 09:15:22,2023-01-05 14:37:46,Closed,System Access,High,IT Su
     st.sidebar.markdown("Download and use this sample data to see optimal results from the analysis.")
 
 
+def add_visualizations_tab(processed_data):
+    """
+    Add a new tab for visualizations in the Streamlit app
+    
+    Args:
+        processed_data (pd.DataFrame): Processed ticket data
+        
+    Returns:
+        None (adds UI elements to Streamlit)
+    """
+    # Create an instance of the visualization component
+    viz_component = TicketVisualizationComponent()
+    
+    # Create visualizations
+    viz_component.create_visualizations(processed_data)
+
+
 def main():
     """
     Main orchestration function
@@ -958,7 +976,7 @@ def main():
             st.session_state['tab_index'] = 0
 
         # Use integer indices for the radio button
-        tab_options = ["Predefined Questions", "Automation Opportunities", "Custom Query"]
+        tab_options = ["Visualizations", "Predefined Questions", "Automation Opportunities", "Custom Query"]
         selected_tab = st.radio(
             "Select Tab",
             options=range(len(tab_options)),
@@ -988,10 +1006,14 @@ def main():
         
         # Show the selected tab content - now passing implementation_agent to all tab functions
         if selected_tab == 0:
-            predefined_questions_tab(processed_data, query_agent, implementation_agent)
+            add_visualizations_tab(processed_data)
+            
         elif selected_tab == 1:
+            predefined_questions_tab(processed_data, query_agent, implementation_agent)
+        elif selected_tab == 2:
             automation_opportunities_tab(processed_data, insight_agent, implementation_agent)
-        else:
+        elif selected_tab == 3:
+            # New tab for visualizations
             custom_query_tab(processed_data, query_agent, implementation_agent)
     else:
         # Display welcome message and instructions when no data is uploaded
